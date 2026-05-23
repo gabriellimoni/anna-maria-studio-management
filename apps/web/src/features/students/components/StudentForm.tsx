@@ -14,6 +14,12 @@ const schema = z.object({
 
 export type StudentFormValues = z.infer<typeof schema>;
 
+function stripEmpty(values: StudentFormValues): StudentFormValues {
+  return Object.fromEntries(
+    Object.entries(values).map(([k, v]) => [k, v === '' ? undefined : v]),
+  ) as StudentFormValues;
+}
+
 interface Props {
   defaultValues?: Partial<Student>;
   onSubmit: (values: StudentFormValues) => void;
@@ -33,7 +39,7 @@ export function StudentForm({ defaultValues, onSubmit, loading }: Props) {
   });
 
   return (
-    <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+    <Box component="form" onSubmit={handleSubmit((v) => onSubmit(stripEmpty(v)))} noValidate>
       <Stack spacing={2}>
         <TextField
           label="Nome completo"
