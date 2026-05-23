@@ -1,0 +1,18 @@
+FROM node:24-alpine
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+WORKDIR /app
+
+# Copy workspace manifests first to leverage layer caching.
+# Rebuild this layer only when package.json files change.
+COPY package.json pnpm-workspace.yaml .npmrc ./
+COPY apps/api/package.json ./apps/api/package.json
+COPY apps/web/package.json ./apps/web/package.json
+COPY packages/contracts/package.json ./packages/contracts/package.json
+
+RUN HUSKY=0 pnpm install
+
+# Source is mounted at runtime via docker-compose volumes.
+# node_modules directories are kept from this image layer via anonymous volumes,
+# so the host's node_modules do not override the container's.

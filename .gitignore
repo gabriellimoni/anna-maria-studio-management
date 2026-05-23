@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+.env.*.local
+*.log
+.firebase/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/

@@ -1,0 +1,69 @@
+name: Bump version
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    # Skip if the push itself was the version bump commit
+    if: "!startsWith(github.event.head_commit.message, 'chore: bump version')"
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Use a token that can push to a protected main branch if needed.
+          # Falls back to the default GITHUB_TOKEN otherwise.
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump patch version across all packages
+        id: bump
+        run: |
+          # Read current version from root package.json
+          CURRENT=$(node -p "require('./package.json').version")
+
+          # Increment patch (0.0.1 → 0.0.2)
+          NEW=$(node -p "
+            const [major, minor, patch] = '$CURRENT'.split('.').map(Number);
+            \`\${major}.\${minor}.\${patch + 1}\`
+          ")
+
+          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
+          echo "new=$NEW"         >> "$GITHUB_OUTPUT"
+
+          # Update all package.json files in-place
+          for pkg in \
+            package.json \
+            apps/api/package.json \
+            apps/web/package.json \
+            packages/contracts/package.json
+          do
+            node -e "
+              const fs = require('fs');
+              const p = JSON.parse(fs.readFileSync('$pkg', 'utf8'));
+              p.version = '$NEW';
+              fs.writeFileSync('$pkg', JSON.stringify(p, null, 2) + '\n');
+            "
+          done
+
+      - name: Commit and push
+        run: |
+          git add \
+            package.json \
+            apps/api/package.json \
+            apps/web/package.json \
+            packages/contracts/package.json
+
+          git commit -m "chore: bump version ${{ steps.bump.outputs.current }} → ${{ steps.bump.outputs.new }}"
+          git push
