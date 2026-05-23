@@ -1,5 +1,5 @@
 {
-  "name": "@representante-vendas/web",
+  "name": "@anna-maria/web",
   "version": "0.0.19",
   "private": true,
   "type": "module",
@@ -15,16 +15,17 @@
     "deploy": "pnpm build && firebase deploy --only hosting"
   },
   "dependencies": {
+    "@anna-maria/contracts": "workspace:*",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^9.0.0",
     "@mui/material": "^9.0.0",
     "@mui/x-date-pickers": "^9.2.0",
-    "@representante-vendas/contracts": "workspace:*",
     "@tanstack/react-query": "^5.99.0",
     "axios": "^1.16.1",
     "date-fns": "^4.1.0",
     "firebase": "^11.9.0",
+    "posthog-js": "^1.376.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.14.1"

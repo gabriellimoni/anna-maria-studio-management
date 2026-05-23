@@ -1,10 +1,10 @@
 module.exports = {
   'apps/api/**/*.ts': [
-    'pnpm --filter @representante-vendas/api lint',
-    () => 'pnpm --filter @representante-vendas/api type-check',
+    'pnpm --filter @anna-maria/api lint',
+    () => 'pnpm --filter @anna-maria/api type-check',
   ],
   'apps/web/**/*.{ts,tsx}': [
-    'pnpm --filter @representante-vendas/web lint',
-    () => 'pnpm --filter @representante-vendas/web type-check',
+    'pnpm --filter @anna-maria/web lint',
+    () => 'pnpm --filter @anna-maria/web type-check',
   ],
 };

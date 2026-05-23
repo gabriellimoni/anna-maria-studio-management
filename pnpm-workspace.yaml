@@ -5,6 +5,7 @@ allowBuilds:
   '@firebase/util': true
   '@nestjs/core': true
   '@scarf/scarf': true
+  core-js: true
   cpu-features: true
   protobufjs: true
   re2: true

@@ -1,0 +1,9 @@
+export type Period = 'monthly' | 'quarterly' | 'semiannual' | 'annual';
+export type PaymentMethod = 'cash' | 'pix' | 'card' | 'boleto';
+export type PlanStatus = 'active' | 'finished' | 'cancelled';
+export type SessionStatus = 'scheduled' | 'present' | 'absence_notified' | 'absence_unnotified' | 'cancelled';
+export type SessionOrigin = 'plan' | 'drop_in';
+export type ReceivableSource = 'plan' | 'drop_in' | 'manual';
+export type PayableSource = 'recurring' | 'manual';
+export type LancamentoStatus = 'pending' | 'paid';
+export type UserRole = 'operator';

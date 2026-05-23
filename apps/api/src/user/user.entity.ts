@@ -1,8 +1,8 @@
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
-export type UserRole = 'admin' | 'user';
+export type UserRole = 'operator';
 
-@Entity('users')
+@Entity('user')
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -11,13 +11,16 @@ export class User {
   firebaseUid: string;
 
   @Column()
-  name: string;
-
-  @Column()
   email: string;
 
-  @Column({ type: 'varchar', default: 'user' })
+  @Column({ type: 'enum', enum: ['operator'], enumName: 'user_role_enum', default: 'operator' })
   role: UserRole;
+
+  @Column({ type: 'boolean', default: true })
+  isActive: boolean;
+
+  @Column({ type: 'uuid', nullable: true, name: 'student_id' })
+  studentId: string | null;
 
   @CreateDateColumn()
   createdAt: Date;

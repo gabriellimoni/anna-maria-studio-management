@@ -1,15 +1,17 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { Logger } from 'nestjs-pino';
 import * as cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
+  app.useLogger(app.get(Logger));
   app.use(cookieParser());
 
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api/v1');
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -24,19 +26,17 @@ async function bootstrap() {
   });
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Representante de Vendas API')
-    .setDescription('API for sales representative campaign management')
+    .setTitle('Anna Maria Studio API')
+    .setDescription('API for Pilates studio management')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('docs', app, document);
+  SwaggerModule.setup('api/v1/docs', app, document);
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
-  console.log(`Application running on port ${port}`);
-  console.log(`Swagger docs available at http://localhost:${port}/docs`);
 }
 
 bootstrap();

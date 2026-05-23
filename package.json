@@ -1,5 +1,5 @@
 {
-  "name": "representante-vendas",
+  "name": "anna-maria",
   "version": "0.0.19",
   "private": true,
   "engines": {
@@ -10,7 +10,7 @@
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
-    "deploy:web": "pnpm --filter @representante-vendas/web run deploy",
+    "deploy:web": "pnpm --filter @anna-maria/web run deploy",
     "prepare": "husky"
   },
   "devDependencies": {
@@ -23,6 +23,7 @@
       "@firebase/util",
       "@nestjs/core",
       "@scarf/scarf",
+      "core-js",
       "cpu-features",
       "esbuild",
       "protobufjs",

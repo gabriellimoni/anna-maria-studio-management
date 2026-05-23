@@ -95,6 +95,6 @@ describe('FirebaseAuthGuard', () => {
 
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
     expect(request.user).toBe(mockUser);
-    expect(userService.findOrCreate).toHaveBeenCalledWith('uid-1', { name: 'Test', email: 'test@test.com' });
+    expect(userService.findOrCreate).toHaveBeenCalledWith('uid-1', { email: 'test@test.com' });
   });
 });
