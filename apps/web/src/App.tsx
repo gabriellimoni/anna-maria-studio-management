@@ -10,6 +10,11 @@ import { ToastProvider } from './components/ToastProvider';
 import { theme } from './theme';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { StudentsListPage } from './features/students/pages/StudentsListPage';
+import { StudentFormPage } from './features/students/pages/StudentFormPage';
+import { StudentDetailPage } from './features/students/pages/StudentDetailPage';
+import { PlanCatalogListPage } from './features/plan-catalog/pages/PlanCatalogListPage';
+import { PlanCatalogFormPage } from './features/plan-catalog/pages/PlanCatalogFormPage';
 import { posthog } from './lib/posthog';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
@@ -65,6 +70,13 @@ export function App() {
 
                   <Route element={<AuthGate />}>
                     <Route path="/" element={<DashboardPage />} />
+                    <Route path="/students" element={<StudentsListPage />} />
+                    <Route path="/students/new" element={<StudentFormPage />} />
+                    <Route path="/students/:id" element={<StudentDetailPage />} />
+                    <Route path="/students/:id/edit" element={<StudentFormPage />} />
+                    <Route path="/plan-catalog" element={<PlanCatalogListPage />} />
+                    <Route path="/plan-catalog/new" element={<PlanCatalogFormPage />} />
+                    <Route path="/plan-catalog/:id/edit" element={<PlanCatalogFormPage />} />
                   </Route>
                 </Routes>
               </BrowserRouter>

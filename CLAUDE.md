@@ -128,16 +128,37 @@ The TypeORM `AppDataSource` in `src/database/data-source.ts` is used by the migr
 
 ```
 src/
-  App.tsx          — router root, QueryClientProvider, AuthProvider, ErrorBoundary
-  theme.ts         — MUI theme (customize palette here)
-  api/             — Axios client wrappers, one file per domain
-  auth/            — Firebase init, auth context, useAuth hook
-  pages/           — one component per route
-  components/      — shared UI components (AppLayout, ToastProvider)
-  lib/posthog.ts   — PostHog web singleton
+  App.tsx              — router root, QueryClientProvider, AuthProvider, ErrorBoundary
+  theme.ts             — MUI theme (customize palette here)
+  api/                 — Axios client wrappers, one file per domain
+  auth/                — Firebase init, auth context, useAuth hook
+  pages/               — one component per route (top-level only)
+  features/<domain>/   — self-contained feature slices (api, hooks, pages, components)
+  components/          — shared UI components (AppLayout, ToastProvider)
+  lib/posthog.ts       — PostHog web singleton
 ```
 
 Vite proxies `/api` to the backend (configured via `API_TARGET` env var in Docker, defaults to `localhost:3000`).
+
+#### MUI v9 — critical rules
+
+- **Never use shorthand style props** (`display`, `fontWeight`, `alignItems`, etc.) directly on MUI components. All layout/style must go inside `sx={{ ... }}`. Example: use `<Box sx={{ display: 'flex', gap: 2 }}>` not `<Box display="flex" gap={2}>`. This applies to `Box`, `Typography`, `Stack`, and all MUI components.
+- `Stack` does not accept `maxWidth` as a direct prop — put it in `sx`.
+
+#### Forms — Zod v4 + react-hook-form
+
+This project uses **Zod v4** and **`@hookform/resolvers` v5**. Key rules:
+
+- Import the resolver as `import { standardSchemaResolver } from '@hookform/resolvers/standard-schema'` — Zod v4 implements the Standard Schema protocol. Do **not** use `@hookform/resolvers/zod` (that targets Zod v3).
+- Avoid `z.coerce.number()` — in Zod v4 it infers as `unknown` and breaks TypeScript inference with react-hook-form. Use `z.number()` for fields backed by a `<Select>` (native number values). For text inputs that must coerce, use `z.string().transform(Number)`.
+
+#### ToastProvider
+
+`useToast()` returns the toast function directly — not an object. Use:
+```ts
+const showToast = useToast();
+showToast('message', 'success');
+```
 
 ### contracts package
 

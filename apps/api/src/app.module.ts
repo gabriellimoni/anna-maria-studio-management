@@ -9,6 +9,8 @@ import { PostHogModule } from './common/posthog/posthog.module';
 import { FirebaseModule } from './firebase/firebase.module';
 import { HealthController } from './health.controller';
 import { UserModule } from './user/user.module';
+import { StudentsModule } from './modules/students/students.module';
+import { PlanCatalogModule } from './modules/plan-catalog/plan-catalog.module';
 import { validateEnv } from './config/env.validation';
 
 @Module({
@@ -30,6 +32,8 @@ import { validateEnv } from './config/env.validation';
     }),
     FirebaseModule,
     UserModule,
+    StudentsModule,
+    PlanCatalogModule,
   ],
   providers: [
     {

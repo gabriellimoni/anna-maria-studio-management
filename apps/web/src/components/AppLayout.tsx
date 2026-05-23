@@ -15,7 +15,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { Home, Menu as MenuIcon } from '@mui/icons-material';
+import { Home, LibraryBooks, Menu as MenuIcon, People } from '@mui/icons-material';
 import { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
@@ -24,6 +24,8 @@ const DRAWER_WIDTH = 240;
 
 const navItems = [
   { label: 'Dashboard', icon: <Home />, path: '/' },
+  { label: 'Alunos', icon: <People />, path: '/students' },
+  { label: 'Catálogo de planos', icon: <LibraryBooks />, path: '/plan-catalog' },
 ];
 
 export function AppLayout() {
@@ -50,7 +52,7 @@ export function AppLayout() {
   const drawerContent = (
     <>
       <Box sx={{ px: 3, py: 2.5, borderBottom: '1px solid', borderColor: 'divider' }}>
-        <Typography sx={{ fontWeight: 700, fontSize: 17 }}>My App</Typography>
+        <Typography sx={{ fontWeight: 700, fontSize: 17 }}>Anna Maria Studio</Typography>
       </Box>
 
       <List sx={{ px: 1, py: 1.5, flex: 1 }}>
@@ -124,7 +126,7 @@ export function AppLayout() {
             <IconButton edge="start" onClick={() => setMobileOpen(true)} size="large">
               <MenuIcon />
             </IconButton>
-            <Typography sx={{ fontWeight: 700, fontSize: 16 }}>My App</Typography>
+            <Typography sx={{ fontWeight: 700, fontSize: 16 }}>Anna Maria Studio</Typography>
           </Toolbar>
         </AppBar>
       )}
