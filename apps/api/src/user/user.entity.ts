@@ -16,7 +16,7 @@ export class User {
   @Column({ type: 'enum', enum: ['operator'], enumName: 'user_role_enum', default: 'operator' })
   role: UserRole;
 
-  @Column({ type: 'boolean', default: true })
+  @Column({ type: 'boolean', default: true, name: 'is_active' })
   isActive: boolean;
 
   @Column({ type: 'uuid', nullable: true, name: 'student_id' })

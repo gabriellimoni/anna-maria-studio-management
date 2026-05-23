@@ -5,7 +5,7 @@ export class Student {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'text' })
+  @Column({ type: 'text', name: 'full_name' })
   fullName: string;
 
   @Column({ type: 'text', nullable: true })
