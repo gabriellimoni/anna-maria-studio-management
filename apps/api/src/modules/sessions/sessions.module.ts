@@ -3,12 +3,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Student } from '../students/entities/student.entity';
 import { Session } from './entities/session.entity';
 import { SessionsController } from './sessions.controller';
+import { SessionsScheduler } from './sessions.scheduler';
 import { SessionsService } from './sessions.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Session, Student])],
   controllers: [SessionsController],
-  providers: [SessionsService],
+  providers: [SessionsService, SessionsScheduler],
   exports: [SessionsService],
 })
 export class SessionsModule {}

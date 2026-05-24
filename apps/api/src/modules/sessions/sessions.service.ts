@@ -167,6 +167,18 @@ export class SessionsService {
     return this.findOne(id);
   }
 
+  async closeOpenPastSessions(cutoff: Date): Promise<{ updated: number }> {
+    const result = await this.dataSource
+      .createQueryBuilder()
+      .update(Session)
+      .set({ status: 'present' as SessionStatus })
+      .where('status = :status', { status: 'scheduled' })
+      .andWhere('scheduled_at < :cutoff', { cutoff })
+      .execute();
+
+    return { updated: result.affected ?? 0 };
+  }
+
   async cancelSession(id: string, dto: CancelSessionDto): Promise<SessionContract> {
     const session = await this.dataSource.getRepository(Session).findOneBy({ id });
     if (!session) throw new NotFoundException(`Session ${id} not found`);
