@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsDateString, IsEnum, IsOptional, IsString, IsUUID, Matches, Min } from 'class-validator';
+import { IsDateString, IsEnum, IsOptional, IsUUID, Matches, Min } from 'class-validator';
 import { PayableSource } from '@anna-maria/contracts';
 
 export class ListPayablesQuery {

@@ -27,6 +27,8 @@ import { ReceivablesPage } from './features/financial/pages/ReceivablesPage';
 import { PayablesPage } from './features/financial/pages/PayablesPage';
 import { ReceivableFormPage } from './features/financial/pages/ReceivableFormPage';
 import { PayableFormPage } from './features/financial/pages/PayableFormPage';
+import { RecurringExpensesPage } from './features/financial/pages/RecurringExpensesPage';
+import { RecurringExpenseFormPage } from './features/financial/pages/RecurringExpenseFormPage';
 import { posthog } from './lib/posthog';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
@@ -103,6 +105,9 @@ export function App() {
                     <Route path="/financeiro/pagar" element={<PayablesPage />} />
                     <Route path="/financeiro/pagar/novo" element={<PayableFormPage />} />
                     <Route path="/financeiro/pagar/:id/edit" element={<PayableFormPage />} />
+                    <Route path="/financeiro/despesas-recorrentes" element={<RecurringExpensesPage />} />
+                    <Route path="/financeiro/despesas-recorrentes/novo" element={<RecurringExpenseFormPage />} />
+                    <Route path="/financeiro/despesas-recorrentes/:id/edit" element={<RecurringExpenseFormPage />} />
                   </Route>
                 </Routes>
               </BrowserRouter>

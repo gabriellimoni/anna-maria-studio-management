@@ -16,12 +16,15 @@ import { SessionsModule } from './modules/sessions/sessions.module';
 import { DropInsModule } from './modules/drop-ins/drop-ins.module';
 import { ReceivablesModule } from './modules/receivables/receivables.module';
 import { PayablesModule } from './modules/payables/payables.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { RecurringExpensesModule } from './modules/recurring-expenses/recurring-expenses.module';
 import { validateEnv } from './config/env.validation';
 
 @Module({
   controllers: [HealthController],
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
+    ScheduleModule.forRoot(),
     LoggerModule,
     PostHogModule,
     TypeOrmModule.forRootAsync({
@@ -44,6 +47,7 @@ import { validateEnv } from './config/env.validation';
     DropInsModule,
     ReceivablesModule,
     PayablesModule,
+    RecurringExpensesModule,
   ],
   providers: [
     {

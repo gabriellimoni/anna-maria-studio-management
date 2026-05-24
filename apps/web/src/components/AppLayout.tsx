@@ -15,7 +15,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { Assignment, AttachMoney, CalendarMonth, EventNote, Home, LibraryBooks, Menu as MenuIcon, MoneyOff, People } from '@mui/icons-material';
+import { Assignment, AttachMoney, CalendarMonth, EventNote, Home, LibraryBooks, Menu as MenuIcon, MoneyOff, People, Repeat } from '@mui/icons-material';
 import { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
@@ -31,6 +31,7 @@ const navItems = [
   { label: 'Aulas avulsas', icon: <EventNote />, path: '/drop-ins' },
   { label: 'A receber', icon: <AttachMoney />, path: '/financeiro/receber' },
   { label: 'A pagar', icon: <MoneyOff />, path: '/financeiro/pagar' },
+  { label: 'Desp. recorrentes', icon: <Repeat />, path: '/financeiro/despesas-recorrentes' },
 ];
 
 export function AppLayout() {

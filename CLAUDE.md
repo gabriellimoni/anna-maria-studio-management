@@ -176,3 +176,17 @@ Pure TypeScript interfaces shared between API and web. No runtime code. Import a
 
 - **Class capacity of 4 students is a WARNING only, never a blocker.** The system shows a warning but never prevents enrollment.
 - `weekday` convention: 0=Sunday … 6=Saturday.
+
+## Testing requirements
+
+Every new backend module MUST include automated tests before the feature is considered complete:
+
+- **Unit tests** (mock repo/DataSource via `@nestjs/testing`) for all service methods — happy paths, error paths (NotFoundException, ConflictException), and edge cases.
+- **Integration tests** (testcontainers — `@testcontainers/postgresql`) for any method that exercises the DB schema: unique indexes, FK constraints, complex queries, or idempotency logic.
+- **Scheduler unit tests** for any `@Cron` class — verify happy path and error path (PostHog capture called on throw).
+- **Controller unit tests** — verify route delegation and any DTO-to-domain transformations (e.g. string → Date parsing).
+
+Reference patterns:
+- Integration test: `apps/api/src/modules/scheduling/services/__tests__/payable-generator.service.spec.ts`
+- Unit test with mocked EntityManager: `apps/api/src/modules/scheduling/services/__tests__/receivable-persist.service.spec.ts`
+- Integration test files go in `__tests__/` subdirectory; unit tests can live alongside source or also in `__tests__/`.
