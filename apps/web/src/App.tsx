@@ -29,6 +29,9 @@ import { ReceivableFormPage } from './features/financial/pages/ReceivableFormPag
 import { PayableFormPage } from './features/financial/pages/PayableFormPage';
 import { RecurringExpensesPage } from './features/financial/pages/RecurringExpensesPage';
 import { RecurringExpenseFormPage } from './features/financial/pages/RecurringExpenseFormPage';
+import { ContractTemplatesPage } from './features/contracts/pages/ContractTemplatesPage';
+import { ContractTemplateEditPage } from './features/contracts/pages/ContractTemplateEditPage';
+import { PublicContractSignPage } from './features/contracts/pages/PublicContractSignPage';
 import { posthog } from './lib/posthog';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
@@ -81,6 +84,7 @@ export function App() {
               <BrowserRouter>
                 <Routes>
                   <Route path="/login" element={<LoginPage />} />
+                  <Route path="/contrato/:token" element={<PublicContractSignPage />} />
 
                   <Route element={<AuthGate />}>
                     <Route path="/" element={<DashboardPage />} />
@@ -108,6 +112,8 @@ export function App() {
                     <Route path="/financeiro/despesas-recorrentes" element={<RecurringExpensesPage />} />
                     <Route path="/financeiro/despesas-recorrentes/novo" element={<RecurringExpenseFormPage />} />
                     <Route path="/financeiro/despesas-recorrentes/:id/edit" element={<RecurringExpenseFormPage />} />
+                    <Route path="/contratos/templates" element={<ContractTemplatesPage />} />
+                    <Route path="/contratos/templates/:id" element={<ContractTemplateEditPage />} />
                   </Route>
                 </Routes>
               </BrowserRouter>

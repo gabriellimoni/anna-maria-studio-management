@@ -144,6 +144,31 @@ Vite proxies `/api` to the backend (configured via `API_TARGET` env var in Docke
 
 - **Never use shorthand style props** (`display`, `fontWeight`, `alignItems`, etc.) directly on MUI components. All layout/style must go inside `sx={{ ... }}`. Example: use `<Box sx={{ display: 'flex', gap: 2 }}>` not `<Box display="flex" gap={2}>`. This applies to `Box`, `Typography`, `Stack`, and all MUI components.
 - `Stack` does not accept `maxWidth` as a direct prop — put it in `sx`.
+- **`inputProps` is removed in MUI v9.** For input element styles (e.g. monospace textarea), use `sx` with a CSS selector: `sx={{ '& textarea': { fontFamily: 'monospace', fontSize: 13 } }}`.
+
+#### React hooks lint rules (enforced by eslint-plugin-react-hooks)
+
+- **No `setState` inside `useEffect`** — the linter rejects it. Use derived state instead:
+  ```ts
+  const [value, setValue] = useState('');
+  const [dirty, setDirty] = useState(false);
+  const current = dirty ? value : (serverValue ?? '');  // derived, no useEffect needed
+  ```
+- **No refs accessed during render** — `ref.current` reads are only valid inside event handlers and effects.
+- **Functions called in `useEffect` must be defined before the effect** — define `syncSize` (or similar) above the `useEffect` that calls it; ESLint enforces declaration order for non-hoisted references.
+
+#### Public routes (no auth)
+
+Add public routes **outside** the `<AuthGate>` wrapper in `App.tsx`:
+```tsx
+<Route path="/public-path/:param" element={<PublicPage />} />
+```
+Authenticated routes stay inside `<Route element={<AuthGate />}>`.
+
+For public API calls, create a **separate axios instance** without the Firebase token interceptor:
+```ts
+const publicClient = axios.create({ baseURL: '/api/v1' });
+```
 
 #### Forms — Zod v4 + react-hook-form
 
@@ -171,6 +196,34 @@ Pure TypeScript interfaces shared between API and web. No runtime code. Import a
 - Migration files live in `apps/api/src/database/migrations/`.
 - Entity files are named `*.entity.ts` and auto-discovered by glob.
 - `numeric(10,2)` columns are stored as strings in TypeORM to avoid floating-point precision loss.
+- **Always specify `type:` explicitly on nullable string columns.** TypeScript compiles `string | null` to `Object` in emitted metadata, and TypeORM throws `DataTypeNotSupportedError: Data type "Object"` at runtime. Add `type: 'varchar'` (or `'text'`) to every nullable string `@Column`.
+- **Always verify actual DB column names against the migration SQL** before writing raw queries. The student entity uses `full_name` (not `name`), user uses `"firebaseUid"` (camelCase, not `firebase_uid`). When in doubt, grep `migrations/` for the CREATE TABLE statement.
+
+### Known entity column names (verified against migration SQL)
+
+| Table | TypeScript field | DB column |
+|-------|-----------------|-----------|
+| `student` | `fullName` | `full_name` |
+| `user` | `firebaseUid` | `"firebaseUid"` (camelCase, quoted) |
+| `plan_catalog` | `name` | `name` (no `modality` column) |
+| `student` | — | no `cpf` column |
+
+### Public endpoints and rate limiting
+
+To expose an endpoint without Firebase auth, use `@Public()` on the controller class or method (from `src/common/decorators/public.decorator.ts`). For rate limiting, install `@nestjs/throttler` and:
+1. Add `ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }])` to `AppModule` imports
+2. Add `{ provide: APP_GUARD, useClass: ThrottlerGuard }` to `AppModule` providers **after** `FirebaseAuthGuard`
+3. Use `@Throttle({ default: { limit: 5, ttl: 60000 } })` on individual endpoints to override the global default
+
+### ESM vs CJS library compatibility
+
+Jest runs in CJS mode. Some libraries are ESM-only and will cause `SyntaxError: Cannot use import statement in a module`:
+- **`marked@18+` is ESM-only** — use `marked@^4` which has a CJS entry (`lib/marked.cjs`). Update `@types/marked` to `@types/marked@4` too.
+- **`sanitize-html`** default import fails in CJS context — use `require()` with explicit type cast:
+  ```ts
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const sanitize = require('sanitize-html') as (html: string, opts: object) => string;
+  ```
 
 ### Business rules
 
@@ -189,4 +242,28 @@ Every new backend module MUST include automated tests before the feature is cons
 Reference patterns:
 - Integration test: `apps/api/src/modules/scheduling/services/__tests__/payable-generator.service.spec.ts`
 - Unit test with mocked EntityManager: `apps/api/src/modules/scheduling/services/__tests__/receivable-persist.service.spec.ts`
+- Contracts integration test (5 tests, testcontainers): `apps/api/src/modules/contracts/__tests__/contracts.service.integration.spec.ts`
 - Integration test files go in `__tests__/` subdirectory; unit tests can live alongside source or also in `__tests__/`.
+
+### Testing patterns and pitfalls
+
+**Mocking EntityManager in unit tests:**
+```ts
+type AnyFn = (...args: unknown[]) => unknown;
+function makeManager(overrides: Record<string, AnyFn> = {}): EntityManager {
+  return { save: jest.fn(), findOne: jest.fn(), ...overrides } as unknown as EntityManager;
+}
+```
+Use `let saved: unknown = null` for captures — TypeScript infers `never` for untyped jest captures. Cast at assertion time: `(saved as MyEntity)?.field`.
+
+**`create` mock must include timestamps:** When mocking `manager.create()`, always include `createdAt: new Date(), updatedAt: new Date()` in the returned object — services often spread those fields.
+
+**EventService in integration tests:** Do NOT instantiate `new EventService(...)`. Mock it: `{ record: jest.fn() } as unknown as EventService`.
+
+**Integration test raw SQL:** Run tests with real PostgreSQL via testcontainers. Raw SQL must match actual migration column names — verify against `migrations/` before writing.
+
+**Run a single test file from repo root:**
+```bash
+cd apps/api && npx jest --testPathPattern="modules/contracts"
+```
+(The `pnpm --filter` approach with `-- --testPathPattern` doesn't forward correctly due to `rootDir: "src"` in Jest config — run `npx jest` directly from inside `apps/api`.)

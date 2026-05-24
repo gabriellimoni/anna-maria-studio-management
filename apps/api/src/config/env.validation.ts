@@ -45,6 +45,18 @@ class EnvVars {
   @IsOptional()
   @IsString()
   LOG_LEVEL?: string;
+
+  @IsOptional()
+  @IsString()
+  FIREBASE_STORAGE_BUCKET?: string;
+
+  @IsOptional()
+  @IsString()
+  FRONTEND_URL?: string;
+
+  @IsOptional()
+  @IsString()
+  STUDIO_NAME?: string;
 }
 
 export function validateEnv(config: Record<string, unknown>) {

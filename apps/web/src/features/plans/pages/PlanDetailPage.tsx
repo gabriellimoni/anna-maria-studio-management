@@ -31,6 +31,7 @@ import { useReceivables } from '../../financial/hooks/useReceivables';
 import { usePayReceivable, useUnpayReceivable } from '../../financial/hooks/useReceivableMutations';
 import { PayDialog } from '../../financial/components/PayDialog';
 import { UnpayConfirmDialog } from '../../financial/components/UnpayConfirmDialog';
+import { PlanContractSection } from '../../contracts/components/PlanContractSection';
 
 const STATUS_LABELS: Record<PlanStatus, { label: string; color: 'success' | 'default' | 'error' }> = {
   active: { label: 'Ativo', color: 'success' },
@@ -154,6 +155,7 @@ export function PlanDetailPage() {
         <Tab label="Horários" />
         <Tab label="Atendimentos" />
         <Tab label="Parcelas" />
+        <Tab label="Contrato" />
       </Tabs>
       <Divider sx={{ mb: 3 }} />
 
@@ -251,6 +253,8 @@ export function PlanDetailPage() {
           />
         </>
       )}
+
+      {tab === 3 && id && <PlanContractSection planId={id} />}
 
       <Dialog open={cancelOpen} onClose={() => setCancelOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Cancelar plano</DialogTitle>
