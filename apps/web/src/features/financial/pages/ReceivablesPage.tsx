@@ -39,10 +39,13 @@ export function ReceivablesPage() {
 
   const rows = data?.data ?? [];
   const total = data?.total ?? 0;
+  const totalAmount = data?.totalAmount ?? '0';
 
   const pending = rows.filter((r) => r.status === 'pending' && !r.isOverdue).length;
   const paid = rows.filter((r) => r.status === 'paid').length;
   const overdue = rows.filter((r) => r.isOverdue).length;
+
+  const totalAmountFormatted = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(totalAmount));
 
   function handlePay(paidAt: string, paymentMethod: Parameters<typeof payMutation.mutate>[0]['data']['paymentMethod']) {
     if (!payTarget) return;
@@ -121,9 +124,12 @@ export function ReceivablesPage() {
               onUnmarkInvoiced={handleUnmarkInvoiced}
             />
           </Paper>
-          <Box sx={{ display: 'flex', gap: 3, mt: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mt: 2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+              Total a receber: {totalAmountFormatted}
+            </Typography>
             <Typography variant="body2" color="text.secondary">
-              Total: {total} | Pendentes: {pending} | Pagas: {paid} | Atrasadas: {overdue}
+              {total} lançamentos | Pendentes: {pending} | Pagas: {paid} | Atrasadas: {overdue}
             </Typography>
           </Box>
         </>

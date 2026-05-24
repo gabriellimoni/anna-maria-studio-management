@@ -54,4 +54,5 @@ export interface ListReceivablesQuery {
 export interface PaginatedReceivables {
   data: Receivable[];
   total: number;
+  totalAmount: string;
 }

@@ -61,6 +61,11 @@ export class ReceivablesService {
     applyWhere(countQb);
     const total = await countQb.getCount();
 
+    const sumQb = this.repo.createQueryBuilder('r').select('COALESCE(SUM(r.amount), 0)', 'totalAmount');
+    applyWhere(sumQb);
+    const sumResult = await sumQb.getRawOne<{ totalAmount: string }>();
+    const totalAmount = sumResult?.totalAmount ?? '0';
+
     const today = new Date().toISOString().slice(0, 10);
 
     const dataQb = this.repo
@@ -97,7 +102,7 @@ export class ReceivablesService {
       updatedAt: raw.r_updated_at instanceof Date ? raw.r_updated_at.toISOString() : String(raw.r_updated_at),
     }));
 
-    return { data, total };
+    return { data, total, totalAmount };
   }
 
   async findOne(id: string): Promise<ReceivableContract> {

@@ -245,9 +245,11 @@ Jest runs in CJS mode. Some libraries are ESM-only and will cause `SyntaxError: 
 
 ## Testing requirements
 
+> **HARD RULE: No backend implementation is done until its tests are written and passing.** This is non-negotiable — a service, controller, scheduler, or any backend feature without tests is considered incomplete, regardless of whether the feature logic itself works.
+
 Every new backend module MUST include automated tests before the feature is considered complete:
 
-- **Unit tests** (mock repo/DataSource via `@nestjs/testing`) for all service methods — happy paths, error paths (NotFoundException, ConflictException), and edge cases.
+- **Unit tests** (mock repo/DataSource via `@nestjs/testing`) for all service methods — happy paths, error paths (NotFoundException, ConflictException), and edge cases. Cover as many meaningful scenarios as the logic warrants.
 - **Integration tests** (testcontainers — `@testcontainers/postgresql`) for any method that exercises the DB schema: unique indexes, FK constraints, complex queries, or idempotency logic.
 - **Scheduler unit tests** for any `@Cron` class — verify happy path and error path (PostHog capture called on throw).
 - **Controller unit tests** — verify route delegation and any DTO-to-domain transformations (e.g. string → Date parsing).
