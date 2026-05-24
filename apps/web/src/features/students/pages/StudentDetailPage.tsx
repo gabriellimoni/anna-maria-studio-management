@@ -6,16 +6,41 @@ import {
   Divider,
   Stack,
   Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
   Tabs,
   Typography,
 } from '@mui/material';
 import { Edit } from '@mui/icons-material';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import type { Session, SessionStatus } from '@anna-maria/contracts';
 import { useStudent } from '../hooks/useStudent';
 import { useArchiveStudent } from '../hooks/useStudentMutations';
+import { useSessions } from '../../schedule/hooks/useSessions';
+import { AttendanceDialog } from '../../schedule/components/AttendanceDialog';
+import { CancelSessionDialog } from '../../schedule/components/CancelSessionDialog';
 import { useToast } from '../../../components/ToastProvider';
 import { getApiError } from '../../../api/client';
+
+const STATUS_LABELS: Record<SessionStatus, string> = {
+  scheduled: 'Agendado',
+  present: 'Presente',
+  absence_notified: 'Falta justificada',
+  absence_unnotified: 'Falta',
+  cancelled: 'Cancelado',
+};
+
+const STATUS_COLORS: Record<SessionStatus, 'default' | 'primary' | 'success' | 'warning' | 'error'> = {
+  scheduled: 'primary',
+  present: 'success',
+  absence_notified: 'warning',
+  absence_unnotified: 'error',
+  cancelled: 'default',
+};
 
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
   return (
@@ -32,7 +57,13 @@ export function StudentDetailPage() {
   const showToast = useToast();
   const [tab, setTab] = useState(0);
 
+  const [attendanceSession, setAttendanceSession] = useState<Session | null>(null);
+  const [cancelSession, setCancelSession] = useState<Session | null>(null);
+
   const { data: student, isLoading } = useStudent(id ?? '');
+  const { data: sessionsData, isLoading: sessionsLoading } = useSessions(
+    tab === 2 ? { studentId: id, pageSize: 100 } : undefined,
+  );
   const archive = useArchiveStudent();
 
   if (isLoading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
@@ -93,8 +124,63 @@ export function StudentDetailPage() {
       )}
 
       {tab === 2 && (
-        <Typography color="text.secondary">Nenhum atendimento registrado.</Typography>
+        sessionsLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
+        ) : !sessionsData?.data.length ? (
+          <Typography color="text.secondary">Nenhum atendimento registrado.</Typography>
+        ) : (
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Data</TableCell>
+                <TableCell>Horário</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Observações</TableCell>
+                <TableCell />
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {sessionsData.data.map((session) => {
+                const dt = new Date(session.scheduledAt);
+                return (
+                  <TableRow key={session.id}>
+                    <TableCell>{dt.toLocaleDateString('pt-BR')}</TableCell>
+                    <TableCell>{dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={STATUS_LABELS[session.status]}
+                        color={STATUS_COLORS[session.status]}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell sx={{ maxWidth: 200, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                      {session.notes ?? '—'}
+                    </TableCell>
+                    <TableCell align="right">
+                      {session.status !== 'cancelled' && (
+                        <Button size="small" onClick={() => setAttendanceSession(session)}>
+                          Editar
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )
       )}
+
+      <AttendanceDialog
+        open={!!attendanceSession}
+        session={attendanceSession}
+        onClose={() => setAttendanceSession(null)}
+      />
+      <CancelSessionDialog
+        open={!!cancelSession}
+        session={cancelSession}
+        onClose={() => setCancelSession(null)}
+      />
     </Box>
   );
 }
