@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsDateString, IsEnum, IsOptional, IsUUID, Min } from 'class-validator';
+import { IsBoolean, IsDateString, IsEnum, IsOptional, IsUUID, Min } from 'class-validator';
 import { ReceivableSource } from '@anna-maria/contracts';
 
 export class ListReceivablesQuery {
@@ -22,6 +22,11 @@ export class ListReceivablesQuery {
   @IsOptional()
   @IsEnum(['plan', 'drop_in', 'manual'] as const)
   source?: ReceivableSource;
+
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' ? true : value === 'false' ? false : value)
+  @IsBoolean()
+  invoiceGenerated?: boolean;
 
   @IsOptional()
   @Transform(({ value }) => Number(value))

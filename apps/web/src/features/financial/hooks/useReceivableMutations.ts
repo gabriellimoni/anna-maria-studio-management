@@ -42,3 +42,19 @@ export function useUnpayReceivable() {
     },
   });
 }
+
+export function useMarkInvoiced() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => receivablesApi.markInvoiced(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['receivables'] }),
+  });
+}
+
+export function useUnmarkInvoiced() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => receivablesApi.unmarkInvoiced(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['receivables'] }),
+  });
+}

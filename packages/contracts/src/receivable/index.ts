@@ -15,6 +15,7 @@ export interface Receivable {
   paymentMethod: PaymentMethod | null;
   status: LancamentoStatus;
   paidAt: string | null;
+  invoiceGenerated: boolean;
   isOverdue: boolean;
   createdAt: string;
   updatedAt: string;
@@ -45,6 +46,7 @@ export interface ListReceivablesQuery {
   to?: string;
   planId?: string;
   source?: ReceivableSource;
+  invoiceGenerated?: boolean;
   page?: number;
   pageSize?: number;
 }

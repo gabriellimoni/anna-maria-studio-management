@@ -4,12 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import type { Receivable } from '@anna-maria/contracts';
 import { getApiError } from '../../../api/client';
 import { useToast } from '../../../components/ToastProvider';
-import { FinancialFiltersBar, type FinancialStatusFilter } from '../components/FinancialFiltersBar';
+import { FinancialFiltersBar, type FinancialStatusFilter, type InvoiceFilter } from '../components/FinancialFiltersBar';
 import { PayDialog } from '../components/PayDialog';
 import { ReceivablesTable } from '../components/ReceivablesTable';
 import { UnpayConfirmDialog } from '../components/UnpayConfirmDialog';
 import { useReceivables } from '../hooks/useReceivables';
-import { usePayReceivable, useUnpayReceivable } from '../hooks/useReceivableMutations';
+import { useMarkInvoiced, usePayReceivable, useUnmarkInvoiced, useUnpayReceivable } from '../hooks/useReceivableMutations';
 
 export function ReceivablesPage() {
   const navigate = useNavigate();
@@ -18,6 +18,7 @@ export function ReceivablesPage() {
   const [status, setStatus] = useState<FinancialStatusFilter>('all');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
+  const [invoiceFilter, setInvoiceFilter] = useState<InvoiceFilter>('all');
 
   const [payTarget, setPayTarget] = useState<Receivable | null>(null);
   const [unpayTarget, setUnpayTarget] = useState<Receivable | null>(null);
@@ -26,11 +27,15 @@ export function ReceivablesPage() {
     ...(status !== 'all' ? { status } : {}),
     ...(from ? { from } : {}),
     ...(to ? { to } : {}),
+    ...(invoiceFilter === 'invoiced' ? { invoiceGenerated: true } : {}),
+    ...(invoiceFilter === 'not_invoiced' ? { invoiceGenerated: false } : {}),
   };
 
   const { data, isLoading } = useReceivables(query);
   const payMutation = usePayReceivable();
   const unpayMutation = useUnpayReceivable();
+  const markInvoicedMutation = useMarkInvoiced();
+  const unmarkInvoicedMutation = useUnmarkInvoiced();
 
   const rows = data?.data ?? [];
   const total = data?.total ?? 0;
@@ -64,6 +69,20 @@ export function ReceivablesPage() {
     });
   }
 
+  function handleMarkInvoiced(r: Receivable) {
+    markInvoicedMutation.mutate(r.id, {
+      onSuccess: () => showToast('NF marcada como emitida', 'success'),
+      onError: (err) => showToast(getApiError(err, 'Erro ao marcar NF'), 'error'),
+    });
+  }
+
+  function handleUnmarkInvoiced(r: Receivable) {
+    unmarkInvoicedMutation.mutate(r.id, {
+      onSuccess: () => showToast('NF desmarcada', 'success'),
+      onError: (err) => showToast(getApiError(err, 'Erro ao desmarcar NF'), 'error'),
+    });
+  }
+
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -80,6 +99,8 @@ export function ReceivablesPage() {
         onFromChange={setFrom}
         to={to}
         onToChange={setTo}
+        invoiceFilter={invoiceFilter}
+        onInvoiceFilterChange={setInvoiceFilter}
       />
 
       {isLoading ? (
@@ -96,6 +117,8 @@ export function ReceivablesPage() {
               onPay={setPayTarget}
               onUnpay={setUnpayTarget}
               onEdit={(r) => navigate(`/financeiro/receber/${r.id}/edit`)}
+              onMarkInvoiced={handleMarkInvoiced}
+              onUnmarkInvoiced={handleUnmarkInvoiced}
             />
           </Paper>
           <Box sx={{ display: 'flex', gap: 3, mt: 2 }}>

@@ -9,6 +9,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -42,6 +43,8 @@ interface ReceivablesTableProps {
   onPay: (r: Receivable) => void;
   onUnpay: (r: Receivable) => void;
   onEdit: (r: Receivable) => void;
+  onMarkInvoiced: (r: Receivable) => void;
+  onUnmarkInvoiced: (r: Receivable) => void;
 }
 
 function StatusChip({ r }: { r: Receivable }) {
@@ -50,7 +53,12 @@ function StatusChip({ r }: { r: Receivable }) {
   return <Chip label="Pendente" color="warning" size="small" />;
 }
 
-export function ReceivablesTable({ rows, onPay, onUnpay, onEdit }: ReceivablesTableProps) {
+function InvoiceChip({ invoiceGenerated }: { invoiceGenerated: boolean }) {
+  if (invoiceGenerated) return <Chip label="NF emitida" color="info" size="small" variant="outlined" />;
+  return <Chip label="Sem NF" size="small" variant="outlined" />;
+}
+
+export function ReceivablesTable({ rows, onPay, onUnpay, onEdit, onMarkInvoiced, onUnmarkInvoiced }: ReceivablesTableProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -70,16 +78,23 @@ export function ReceivablesTable({ rows, onPay, onUnpay, onEdit }: ReceivablesTa
                 <Typography variant="body2">R$ {r.amount}</Typography>
                 <Typography variant="body2" color="text.secondary">{r.dueDate}</Typography>
               </Box>
-              <Box sx={{ display: 'flex', gap: 1, mt: 1, alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', gap: 1, mt: 1, alignItems: 'center', flexWrap: 'wrap' }}>
                 <StatusChip r={r} />
+                <InvoiceChip invoiceGenerated={r.invoiceGenerated} />
                 {r.paidAt && <Typography variant="caption" color="text.secondary">Pago em {r.paidAt}</Typography>}
               </Box>
-              <Box sx={{ display: 'flex', gap: 1, mt: 1.5 }}>
+              <Box sx={{ display: 'flex', gap: 1, mt: 1.5, flexWrap: 'wrap' }}>
                 {r.status === 'pending' && (
                   <Button size="small" variant="outlined" onClick={() => onPay(r)}>Dar baixa</Button>
                 )}
                 {r.status === 'paid' && (
                   <Button size="small" variant="outlined" color="warning" onClick={() => onUnpay(r)}>Estornar</Button>
+                )}
+                {!r.invoiceGenerated && (
+                  <Button size="small" variant="outlined" color="info" onClick={() => onMarkInvoiced(r)}>Marcar NF</Button>
+                )}
+                {r.invoiceGenerated && (
+                  <Button size="small" variant="outlined" onClick={() => onUnmarkInvoiced(r)}>Desmarcar NF</Button>
                 )}
                 <Button size="small" variant="outlined" onClick={() => onEdit(r)}>Editar</Button>
               </Box>
@@ -100,6 +115,7 @@ export function ReceivablesTable({ rows, onPay, onUnpay, onEdit }: ReceivablesTa
           <TableCell>Valor</TableCell>
           <TableCell>Vencimento</TableCell>
           <TableCell>Status</TableCell>
+          <TableCell>NF</TableCell>
           <TableCell>Ações</TableCell>
         </TableRow>
       </TableHead>
@@ -132,12 +148,24 @@ export function ReceivablesTable({ rows, onPay, onUnpay, onEdit }: ReceivablesTa
               )}
             </TableCell>
             <TableCell>
-              <Box sx={{ display: 'flex', gap: 0.5 }}>
+              <InvoiceChip invoiceGenerated={r.invoiceGenerated} />
+            </TableCell>
+            <TableCell>
+              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                 {r.status === 'pending' && (
                   <Button size="small" onClick={() => onPay(r)}>Baixa</Button>
                 )}
                 {r.status === 'paid' && (
                   <Button size="small" color="warning" onClick={() => onUnpay(r)}>Estornar</Button>
+                )}
+                {!r.invoiceGenerated ? (
+                  <Tooltip title="Marcar NF como emitida">
+                    <Button size="small" color="info" onClick={() => onMarkInvoiced(r)}>NF</Button>
+                  </Tooltip>
+                ) : (
+                  <Tooltip title="Desmarcar NF">
+                    <Button size="small" onClick={() => onUnmarkInvoiced(r)}>-NF</Button>
+                  </Tooltip>
                 )}
                 <Button size="small" onClick={() => onEdit(r)}>Editar</Button>
               </Box>

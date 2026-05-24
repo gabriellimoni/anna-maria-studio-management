@@ -27,6 +27,7 @@ function toContract(r: Receivable & { studentName?: string; planPeriod?: string;
     paymentMethod: r.paymentMethod,
     status: r.status,
     paidAt: r.paidAt,
+    invoiceGenerated: r.invoiceGenerated,
     isOverdue: r.status === 'pending' && r.dueDate < today,
     createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt),
     updatedAt: r.updatedAt instanceof Date ? r.updatedAt.toISOString() : String(r.updatedAt),
@@ -41,7 +42,7 @@ export class ReceivablesService {
   ) {}
 
   async findAll(query: ListReceivablesQuery): Promise<PaginatedReceivables> {
-    const { status, from, to, planId, source, page = 1, pageSize = 20 } = query;
+    const { status, from, to, planId, source, invoiceGenerated, page = 1, pageSize = 20 } = query;
 
     const applyWhere = (qb: ReturnType<typeof this.repo.createQueryBuilder>) => {
       if (status === 'overdue') {
@@ -53,6 +54,7 @@ export class ReceivablesService {
       if (to) qb.andWhere('r.due_date <= :to', { to });
       if (planId) qb.andWhere('r.plan_id = :planId', { planId });
       if (source) qb.andWhere('r.source = :source', { source });
+      if (invoiceGenerated !== undefined) qb.andWhere('r.invoice_generated = :invoiceGenerated', { invoiceGenerated });
     };
 
     const countQb = this.repo.createQueryBuilder('r');
@@ -89,6 +91,7 @@ export class ReceivablesService {
       paymentMethod: raw.r_payment_method ?? null,
       status: raw.r_status,
       paidAt: raw.r_paid_at ?? null,
+      invoiceGenerated: raw.r_invoice_generated ?? false,
       isOverdue: raw.r_status === 'pending' && raw.r_due_date < today,
       createdAt: raw.r_created_at instanceof Date ? raw.r_created_at.toISOString() : String(raw.r_created_at),
       updatedAt: raw.r_updated_at instanceof Date ? raw.r_updated_at.toISOString() : String(raw.r_updated_at),
@@ -151,6 +154,26 @@ export class ReceivablesService {
 
     r.status = 'pending';
     r.paidAt = null;
+    await this.repo.save(r);
+    return toContract(r);
+  }
+
+  async markInvoiced(id: string): Promise<ReceivableContract> {
+    const r = await this.repo.findOne({ where: { id } });
+    if (!r) throw new NotFoundException(`Receivable ${id} not found`);
+    if (r.invoiceGenerated) throw new ConflictException('Invoice already marked as generated');
+
+    r.invoiceGenerated = true;
+    await this.repo.save(r);
+    return toContract(r);
+  }
+
+  async unmarkInvoiced(id: string): Promise<ReceivableContract> {
+    const r = await this.repo.findOne({ where: { id } });
+    if (!r) throw new NotFoundException(`Receivable ${id} not found`);
+    if (!r.invoiceGenerated) throw new ConflictException('Invoice is not marked as generated');
+
+    r.invoiceGenerated = false;
     await this.repo.save(r);
     return toContract(r);
   }

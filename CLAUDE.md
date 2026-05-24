@@ -114,6 +114,19 @@ Global setup in `main.ts`:
 
 The TypeORM `AppDataSource` in `src/database/data-source.ts` is used by the migration CLI; the runtime connection is configured inside `AppModule` via `TypeOrmModule.forRootAsync`.
 
+### Migration hygiene — prevent schema drift
+
+**Generate a migration immediately after every entity change.** Never batch entity changes across sessions without generating the corresponding migration — TypeORM's `migration:generate` diffs the live DB against entities, so accumulated changes produce bloated migrations full of unrelated noise.
+
+**After generating, run `--dryrun` to review the output:**
+```bash
+cd apps/api && npx typeorm-ts-node-commonjs migration:generate -d src/database/data-source.ts --dryrun src/database/migrations/Check
+```
+
+**Known TypeORM false positive — enum rename cycles:** TypeORM always generates `RENAME TO _old → CREATE same values → DROP _old` cycles for enum columns even when the enum hasn't changed. If the only diff shown by `--dryrun` is these cycles, the schema is clean — do not create a migration for them.
+
+**Do not ignore real drift.** If `--dryrun` shows non-enum changes (new columns, index renames, constraint changes) after a migration was just run, it means entities and DB have diverged — generate and run a migration to fix it before adding more entity changes.
+
 ### Domain event audit trail
 
 `EventService` (`src/event/`) provides a generic `record()` method for writing audit events to the `domain_events` table. Always call it inside a transaction using the passed `EntityManager`.

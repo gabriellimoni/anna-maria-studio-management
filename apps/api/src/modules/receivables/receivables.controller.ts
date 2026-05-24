@@ -41,4 +41,14 @@ export class ReceivablesController {
   unpay(@Param('id') id: string) {
     return this.service.unpay(id);
   }
+
+  @Post(':id/mark-invoiced')
+  markInvoiced(@Param('id') id: string) {
+    return this.service.markInvoiced(id);
+  }
+
+  @Post(':id/unmark-invoiced')
+  unmarkInvoiced(@Param('id') id: string) {
+    return this.service.unmarkInvoiced(id);
+  }
 }

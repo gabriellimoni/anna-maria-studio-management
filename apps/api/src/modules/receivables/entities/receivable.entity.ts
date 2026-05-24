@@ -36,6 +36,9 @@ export class Receivable {
   @Column({ type: 'date', nullable: true, name: 'paid_at' })
   paidAt: string | null;
 
+  @Column({ type: 'boolean', default: false, name: 'invoice_generated' })
+  invoiceGenerated: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

@@ -27,4 +27,10 @@ export const receivablesApi = {
   unpay(id: string) {
     return apiClient.post<Receivable>(`/receivables/${id}/unpay`).then((r) => r.data);
   },
+  markInvoiced(id: string) {
+    return apiClient.post<Receivable>(`/receivables/${id}/mark-invoiced`).then((r) => r.data);
+  },
+  unmarkInvoiced(id: string) {
+    return apiClient.post<Receivable>(`/receivables/${id}/unmark-invoiced`).then((r) => r.data);
+  },
 };
