@@ -15,7 +15,7 @@ export function PayablesPage() {
   const navigate = useNavigate();
   const showToast = useToast();
 
-  const [status, setStatus] = useState<FinancialStatusFilter>('all');
+  const [status, setStatus] = useState<FinancialStatusFilter>('pending');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [competenceMonth, setCompetenceMonth] = useState('');
