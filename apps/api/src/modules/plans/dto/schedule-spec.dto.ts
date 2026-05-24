@@ -7,6 +7,6 @@ export class ScheduleSpecDto {
   weekday: number;
 
   @IsString()
-  @Matches(/^\d{2}:\d{2}$/)
+  @Matches(/^\d{2}:\d{2}(:\d{2})?$/)
   startTime: string;
 }

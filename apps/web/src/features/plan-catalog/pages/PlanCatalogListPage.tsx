@@ -18,6 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import { usePlanCatalog } from '../hooks/usePlanCatalog';
 import { useArchivePlanCatalog } from '../hooks/usePlanCatalogMutations';
 import { useToast } from '../../../components/ToastProvider';
+import { getApiError } from '../../../api/client';
 
 const PERIOD_LABELS: Record<string, string> = {
   monthly: 'Mensal',
@@ -35,7 +36,7 @@ export function PlanCatalogListPage() {
   const handleArchive = (id: string) => {
     archive.mutate(id, {
       onSuccess: () => showToast('Item desativado', 'success'),
-      onError: () => showToast('Erro ao desativar', 'error'),
+      onError: (err) => showToast(getApiError(err, 'Erro ao desativar'), 'error'),
     });
   };
 

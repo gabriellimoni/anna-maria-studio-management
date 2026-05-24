@@ -1,6 +1,18 @@
-import axios from 'axios';
+import axios, { isAxiosError } from 'axios';
 import { auth } from '../auth/firebase';
 import { posthog } from '../lib/posthog';
+
+export function getApiError(error: unknown, fallback = 'Erro inesperado'): string {
+  if (isAxiosError(error)) {
+    const data = error.response?.data as { message?: unknown } | undefined;
+    if (data?.message) {
+      return Array.isArray(data.message)
+        ? (data.message as string[]).join(' · ')
+        : String(data.message);
+    }
+  }
+  return fallback;
+}
 
 export const apiClient = axios.create({ baseURL: import.meta.env.VITE_API_URL ?? '/api/v1' });
 

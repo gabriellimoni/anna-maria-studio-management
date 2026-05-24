@@ -19,7 +19,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     const isHttpException = exception instanceof HttpException;
     const status = isHttpException ? exception.getStatus() : 500;
-    const message = isHttpException ? exception.message : 'Internal server error';
 
     if (!isHttpException || status >= 500) {
       const err = exception instanceof Error ? exception : new Error(String(exception));
@@ -34,10 +33,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
       });
     }
 
-    res.status(status).json({
-      statusCode: status,
-      error: isHttpException ? exception.constructor.name : 'InternalServerError',
-      message,
-    });
+    if (isHttpException) {
+      const httpResponse = exception.getResponse();
+      const body =
+        typeof httpResponse === 'string'
+          ? { statusCode: status, error: exception.constructor.name, message: httpResponse }
+          : httpResponse;
+      res.status(status).json(body);
+    } else {
+      res.status(status).json({
+        statusCode: status,
+        error: 'InternalServerError',
+        message: 'Internal server error',
+      });
+    }
   }
 }

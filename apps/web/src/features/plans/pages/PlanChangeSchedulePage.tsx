@@ -6,6 +6,7 @@ import { usePlan } from '../hooks/usePlan';
 import { useChangeSchedule } from '../hooks/usePlanMutations';
 import { ScheduleSlotPicker } from '../components/ScheduleSlotPicker';
 import { useToast } from '../../../components/ToastProvider';
+import { getApiError } from '../../../api/client';
 
 interface ScheduleSlot {
   weekday: number | '';
@@ -34,7 +35,7 @@ function ChangeScheduleForm({ plan }: { plan: PlanDetail }) {
           );
           navigate(`/plans/${plan.id}`);
         },
-        onError: () => showToast('Erro ao trocar horário', 'error'),
+        onError: (err) => showToast(getApiError(err, 'Erro ao trocar horário'), 'error'),
       },
     );
   };

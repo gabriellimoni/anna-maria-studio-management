@@ -26,6 +26,7 @@ import type { PlanStatus } from '@anna-maria/contracts';
 import { usePlan } from '../hooks/usePlan';
 import { useCancelPlan } from '../hooks/usePlanMutations';
 import { useToast } from '../../../components/ToastProvider';
+import { getApiError } from '../../../api/client';
 
 const STATUS_LABELS: Record<PlanStatus, { label: string; color: 'success' | 'default' | 'error' }> = {
   active: { label: 'Ativo', color: 'success' },
@@ -66,7 +67,7 @@ export function PlanDetailPage() {
           showToast(msg, 'success');
           setCancelOpen(false);
         },
-        onError: () => showToast('Erro ao cancelar plano', 'error'),
+        onError: (err) => showToast(getApiError(err, 'Erro ao cancelar plano'), 'error'),
       },
     );
   };

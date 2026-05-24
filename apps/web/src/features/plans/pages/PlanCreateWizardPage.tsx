@@ -20,6 +20,7 @@ import { useCreatePlan } from '../hooks/usePlanMutations';
 import { ScheduleSlotPicker } from '../components/ScheduleSlotPicker';
 import { InstallmentsEditor } from '../components/InstallmentsEditor';
 import { useToast } from '../../../components/ToastProvider';
+import { getApiError } from '../../../api/client';
 import { suggestInstallments } from '../utils/installments-suggester';
 
 const STEPS = ['Dados básicos', 'Horários', 'Parcelas'];
@@ -90,15 +91,12 @@ export function PlanCreateWizardPage() {
         showToast('Plano criado com sucesso', 'success');
         navigate(`/plans/${res.id}`);
       },
-      onError: (err: any) => {
-        const msg = err?.response?.data?.message ?? 'Erro ao criar plano';
-        showToast(Array.isArray(msg) ? msg.join(', ') : msg, 'error');
-      },
+      onError: (err) => showToast(getApiError(err, 'Erro ao criar plano'), 'error'),
     });
   };
 
   return (
-    <Box sx={{ p: 3, maxWidth: 720 }}>
+    <Box sx={{ p: 3, maxWidth: 1000 }}>
       <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>Novo plano</Typography>
 
       <Stepper activeStep={activeStep} sx={{ mb: 4 }}>

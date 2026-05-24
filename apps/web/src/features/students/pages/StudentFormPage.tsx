@@ -4,6 +4,7 @@ import { StudentForm, type StudentFormValues } from '../components/StudentForm';
 import { useStudent } from '../hooks/useStudent';
 import { useCreateStudent, useUpdateStudent } from '../hooks/useStudentMutations';
 import { useToast } from '../../../components/ToastProvider';
+import { getApiError } from '../../../api/client';
 
 export function StudentFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -25,7 +26,7 @@ export function StudentFormPage() {
         showToast(isEdit ? 'Aluno atualizado' : 'Aluno criado', 'success');
         navigate(`/students/${isEdit ? id : (result as { id: string }).id}`);
       })
-      .catch(() => showToast('Erro ao salvar', 'error'));
+      .catch((err) => showToast(getApiError(err, 'Erro ao salvar'), 'error'));
   };
 
   if (isEdit && isLoading) {

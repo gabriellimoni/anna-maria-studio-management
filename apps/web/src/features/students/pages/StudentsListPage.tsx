@@ -16,6 +16,7 @@ import { useStudents } from '../hooks/useStudents';
 import { useArchiveStudent } from '../hooks/useStudentMutations';
 import { StudentsTable } from '../components/StudentsTable';
 import { useToast } from '../../../components/ToastProvider';
+import { getApiError } from '../../../api/client';
 
 export function StudentsListPage() {
   const navigate = useNavigate();
@@ -34,7 +35,7 @@ export function StudentsListPage() {
   const handleArchive = (id: string) => {
     archive.mutate(id, {
       onSuccess: () => showToast('Aluno arquivado', 'success'),
-      onError: () => showToast('Erro ao arquivar', 'error'),
+      onError: (err) => showToast(getApiError(err, 'Erro ao arquivar'), 'error'),
     });
   };
 

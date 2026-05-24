@@ -4,6 +4,7 @@ import { PlanCatalogForm, type PlanCatalogFormValues } from '../components/PlanC
 import { usePlanCatalogItem } from '../hooks/usePlanCatalog';
 import { useCreatePlanCatalog, useUpdatePlanCatalog } from '../hooks/usePlanCatalogMutations';
 import { useToast } from '../../../components/ToastProvider';
+import { getApiError } from '../../../api/client';
 
 export function PlanCatalogFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -23,7 +24,7 @@ export function PlanCatalogFormPage() {
         showToast(isEdit ? 'Plano atualizado' : 'Plano criado', 'success');
         navigate('/plan-catalog');
       })
-      .catch(() => showToast('Erro ao salvar', 'error'));
+      .catch((err) => showToast(getApiError(err, 'Erro ao salvar'), 'error'));
   };
 
   if (isEdit && isLoading) {

@@ -15,6 +15,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useStudent } from '../hooks/useStudent';
 import { useArchiveStudent } from '../hooks/useStudentMutations';
 import { useToast } from '../../../components/ToastProvider';
+import { getApiError } from '../../../api/client';
 
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
   return (
@@ -43,7 +44,7 @@ export function StudentDetailPage() {
         showToast('Aluno arquivado', 'success');
         navigate('/students');
       },
-      onError: () => showToast('Erro ao arquivar', 'error'),
+      onError: (err) => showToast(getApiError(err, 'Erro ao arquivar'), 'error'),
     });
   };
 
