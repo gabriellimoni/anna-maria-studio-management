@@ -9,8 +9,8 @@ export class Session {
   @Column({ type: 'uuid', nullable: true, name: 'plan_id' })
   planId: string | null;
 
-  @Column({ type: 'uuid', name: 'student_id' })
-  studentId: string;
+  @Column({ type: 'uuid', nullable: true, name: 'student_id' })
+  studentId: string | null;
 
   @Column({ type: 'timestamptz', name: 'scheduled_at' })
   scheduledAt: Date;

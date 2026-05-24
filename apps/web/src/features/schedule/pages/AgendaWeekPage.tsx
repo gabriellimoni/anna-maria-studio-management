@@ -1,15 +1,17 @@
 import { Box, Button, CircularProgress, IconButton, Typography } from '@mui/material';
-import { ChevronLeft, ChevronRight } from '@mui/icons-material';
+import { Add, ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { useState } from 'react';
 import { addDays, addWeeks, format, startOfWeek, subWeeks } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { Session } from '@anna-maria/contracts';
+import { useNavigate } from 'react-router-dom';
 import { useCalendar } from '../hooks/useCalendar';
 import { WeekGrid } from '../components/WeekGrid';
 import { AttendanceDialog } from '../components/AttendanceDialog';
 import { CancelSessionDialog } from '../components/CancelSessionDialog';
 
 export function AgendaWeekPage() {
+  const navigate = useNavigate();
   const [weekStart, setWeekStart] = useState(() =>
     startOfWeek(new Date(), { weekStartsOn: 1 }),
   );
@@ -29,6 +31,14 @@ export function AgendaWeekPage() {
         <Typography variant="h5" sx={{ fontWeight: 700, flex: 1 }}>
           Agenda
         </Typography>
+        <Button
+          size="small"
+          variant="contained"
+          startIcon={<Add />}
+          onClick={() => navigate('/drop-ins/new')}
+        >
+          Aula avulsa
+        </Button>
         <Button
           size="small"
           variant="outlined"

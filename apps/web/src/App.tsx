@@ -21,6 +21,8 @@ import { PlanDetailPage } from './features/plans/pages/PlanDetailPage';
 import { PlanChangeSchedulePage } from './features/plans/pages/PlanChangeSchedulePage';
 import { AgendaWeekPage } from './features/schedule/pages/AgendaWeekPage';
 import { AgendaDayPage } from './features/schedule/pages/AgendaDayPage';
+import { DropInsListPage } from './features/drop-ins/pages/DropInsListPage';
+import { DropInFormPage } from './features/drop-ins/pages/DropInFormPage';
 import { posthog } from './lib/posthog';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
@@ -89,6 +91,8 @@ export function App() {
                     <Route path="/plans/:id/change-schedule" element={<PlanChangeSchedulePage />} />
                     <Route path="/agenda" element={<AgendaWeekPage />} />
                     <Route path="/agenda/dia/:date?" element={<AgendaDayPage />} />
+                    <Route path="/drop-ins" element={<DropInsListPage />} />
+                    <Route path="/drop-ins/new" element={<DropInFormPage />} />
                   </Route>
                 </Routes>
               </BrowserRouter>

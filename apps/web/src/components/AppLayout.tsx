@@ -15,7 +15,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { Assignment, CalendarMonth, Home, LibraryBooks, Menu as MenuIcon, People } from '@mui/icons-material';
+import { Assignment, CalendarMonth, EventNote, Home, LibraryBooks, Menu as MenuIcon, People } from '@mui/icons-material';
 import { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
@@ -28,6 +28,7 @@ const navItems = [
   { label: 'Planos', icon: <Assignment />, path: '/plans' },
   { label: 'Catálogo de planos', icon: <LibraryBooks />, path: '/plan-catalog' },
   { label: 'Agenda', icon: <CalendarMonth />, path: '/agenda' },
+  { label: 'Aulas avulsas', icon: <EventNote />, path: '/drop-ins' },
 ];
 
 export function AppLayout() {

@@ -4,6 +4,7 @@ import { InitialSchema1000000000000 } from './migrations/1000000000000-InitialSc
 import { UserAlignWithDoc021779574356000 } from './migrations/1779574356000-UserAlignWithDoc02';
 import { CreateDomainSchema1779574357000 } from './migrations/1779574357000-CreateDomainSchema';
 import { UserAddStudentFk1779574358000 } from './migrations/1779574358000-UserAddStudentFk';
+import { MakeSessionStudentNullable1780000000000 } from './migrations/1780000000000-MakeSessionStudentNullable';
 
 dotenv.config();
 
@@ -12,6 +13,7 @@ export const migrations = [
   UserAlignWithDoc021779574356000,
   CreateDomainSchema1779574357000,
   UserAddStudentFk1779574358000,
+  MakeSessionStudentNullable1780000000000,
 ];
 
 export const AppDataSource = new DataSource({
