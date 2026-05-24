@@ -9,6 +9,7 @@ export interface PlanSchedule {
 export interface Plan {
   id: string;
   studentId: string;
+  studentName: string;
   planCatalogId: string | null;
   period: Period;
   weeklyFrequency: number;

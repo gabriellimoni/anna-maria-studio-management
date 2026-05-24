@@ -100,7 +100,7 @@ export function PlansListPage() {
                   const st = STATUS_LABELS[plan.status] ?? { label: plan.status, color: 'default' };
                   return (
                     <TableRow key={plan.id} hover>
-                      <TableCell>{plan.studentId}</TableCell>
+                      <TableCell>{plan.studentName}</TableCell>
                       <TableCell>{PERIOD_LABELS[plan.period] ?? plan.period}</TableCell>
                       <TableCell>{plan.weeklyFrequency}x/semana</TableCell>
                       <TableCell>{plan.endDate}</TableCell>

@@ -19,8 +19,11 @@ export class ReceivablePersistService {
     plan: Plan;
     installments: InstallmentInput[];
     manager: EntityManager;
+    studentName?: string;
+    planName?: string;
   }): Promise<Receivable[]> {
-    const { plan, installments, manager } = input;
+    const { plan, installments, manager, studentName, planName } = input;
+    const baseDescription = studentName && planName ? `${studentName} — ${planName}` : undefined;
 
     if (installments.length < 1) {
       throw new UnprocessableEntityException('At least one installment is required');
@@ -44,7 +47,7 @@ export class ReceivablePersistService {
       manager.create(Receivable, {
         planId: plan.id,
         source: 'plan',
-        description: `Parcela ${i + 1}/${n}`,
+        description: baseDescription ?? `Parcela ${i + 1}/${n}`,
         installmentNumber: i + 1,
         installmentTotal: n,
         amount: inst.amount,

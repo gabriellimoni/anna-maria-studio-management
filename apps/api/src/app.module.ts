@@ -14,6 +14,8 @@ import { PlanCatalogModule } from './modules/plan-catalog/plan-catalog.module';
 import { PlansModule } from './modules/plans/plans.module';
 import { SessionsModule } from './modules/sessions/sessions.module';
 import { DropInsModule } from './modules/drop-ins/drop-ins.module';
+import { ReceivablesModule } from './modules/receivables/receivables.module';
+import { PayablesModule } from './modules/payables/payables.module';
 import { validateEnv } from './config/env.validation';
 
 @Module({
@@ -40,6 +42,8 @@ import { validateEnv } from './config/env.validation';
     PlansModule,
     SessionsModule,
     DropInsModule,
+    ReceivablesModule,
+    PayablesModule,
   ],
   providers: [
     {

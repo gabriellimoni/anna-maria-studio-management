@@ -22,11 +22,15 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import type { PlanStatus } from '@anna-maria/contracts';
+import type { PlanStatus, Receivable } from '@anna-maria/contracts';
 import { usePlan } from '../hooks/usePlan';
 import { useCancelPlan } from '../hooks/usePlanMutations';
 import { useToast } from '../../../components/ToastProvider';
 import { getApiError } from '../../../api/client';
+import { useReceivables } from '../../financial/hooks/useReceivables';
+import { usePayReceivable, useUnpayReceivable } from '../../financial/hooks/useReceivableMutations';
+import { PayDialog } from '../../financial/components/PayDialog';
+import { UnpayConfirmDialog } from '../../financial/components/UnpayConfirmDialog';
 
 const STATUS_LABELS: Record<PlanStatus, { label: string; color: 'success' | 'default' | 'error' }> = {
   active: { label: 'Ativo', color: 'success' },
@@ -53,10 +57,42 @@ export function PlanDetailPage() {
   const { data: plan, isLoading } = usePlan(id ?? '');
   const cancelPlan = useCancelPlan(id ?? '');
 
+  const { data: receivablesData } = useReceivables(id ? { planId: id } : undefined);
+  const payReceivable = usePayReceivable();
+  const unpayReceivable = useUnpayReceivable();
+  const [payTarget, setPayTarget] = useState<Receivable | null>(null);
+  const [unpayTarget, setUnpayTarget] = useState<Receivable | null>(null);
+
   if (isLoading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
   if (!plan) return null;
 
   const st = STATUS_LABELS[plan.status] ?? { label: plan.status, color: 'default' };
+  const planReceivables = receivablesData?.data ?? [];
+
+  const handlePay = (paidAt: string, paymentMethod: Receivable['paymentMethod'] & string) => {
+    if (!payTarget) return;
+    payReceivable.mutate(
+      { id: payTarget.id, data: { paidAt, paymentMethod: paymentMethod as Parameters<typeof payReceivable.mutate>[0]['data']['paymentMethod'] } },
+      {
+        onSuccess: () => {
+          showToast('Pagamento registrado', 'success');
+          setPayTarget(null);
+        },
+        onError: (err) => showToast(getApiError(err, 'Erro ao registrar pagamento'), 'error'),
+      },
+    );
+  };
+
+  const handleUnpay = () => {
+    if (!unpayTarget) return;
+    unpayReceivable.mutate(unpayTarget.id, {
+      onSuccess: () => {
+        showToast('Pagamento estornado', 'success');
+        setUnpayTarget(null);
+      },
+      onError: (err) => showToast(getApiError(err, 'Erro ao estornar pagamento'), 'error'),
+    });
+  };
 
   const handleCancel = () => {
     cancelPlan.mutate(
@@ -151,34 +187,69 @@ export function PlanDetailPage() {
       )}
 
       {tab === 2 && (
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>#</TableCell>
-              <TableCell>Valor</TableCell>
-              <TableCell>Vencimento</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Pago em</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {plan.receivables.map((r, i) => (
-              <TableRow key={r.id}>
-                <TableCell>{i + 1}</TableCell>
-                <TableCell>R$ {r.amount}</TableCell>
-                <TableCell>{r.dueDate}</TableCell>
-                <TableCell>
-                  <Chip
-                    label={r.status === 'paid' ? 'Pago' : 'Pendente'}
-                    color={r.status === 'paid' ? 'success' : 'warning'}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>{r.paidAt ?? '—'}</TableCell>
+        <>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>#</TableCell>
+                <TableCell>Valor</TableCell>
+                <TableCell>Vencimento</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Pago em</TableCell>
+                <TableCell>Ações</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHead>
+            <TableBody>
+              {planReceivables.map((r, i) => {
+                const today = new Date().toISOString().slice(0, 10);
+                const isOverdue = r.status === 'pending' && r.dueDate < today;
+                return (
+                  <TableRow key={r.id}>
+                    <TableCell>{r.installmentNumber ?? i + 1}</TableCell>
+                    <TableCell>R$ {r.amount}</TableCell>
+                    <TableCell>{r.dueDate}</TableCell>
+                    <TableCell>
+                      {isOverdue ? (
+                        <Chip label="ATRASADA" color="error" size="small" />
+                      ) : (
+                        <Chip
+                          label={r.status === 'paid' ? 'Pago' : 'Pendente'}
+                          color={r.status === 'paid' ? 'success' : 'warning'}
+                          size="small"
+                        />
+                      )}
+                    </TableCell>
+                    <TableCell>{r.paidAt ?? '—'}</TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        {r.status === 'pending' && (
+                          <Button size="small" onClick={() => setPayTarget(r)}>Baixa</Button>
+                        )}
+                        {r.status === 'paid' && (
+                          <Button size="small" color="warning" onClick={() => setUnpayTarget(r)}>Estornar</Button>
+                        )}
+                        <Button size="small" onClick={() => navigate(`/financeiro/receber/${r.id}/edit`)}>Editar</Button>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+
+          <PayDialog
+            open={!!payTarget}
+            onClose={() => setPayTarget(null)}
+            onConfirm={handlePay}
+            loading={payReceivable.isPending}
+          />
+          <UnpayConfirmDialog
+            open={!!unpayTarget}
+            onClose={() => setUnpayTarget(null)}
+            onConfirm={handleUnpay}
+            loading={unpayReceivable.isPending}
+          />
+        </>
       )}
 
       <Dialog open={cancelOpen} onClose={() => setCancelOpen(false)} maxWidth="sm" fullWidth>

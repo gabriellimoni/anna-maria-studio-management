@@ -79,6 +79,8 @@ export class PlansService {
         plan,
         installments: dto.installments,
         manager,
+        studentName: student.fullName,
+        planName: catalog.name,
       });
 
       const response: Record<string, unknown> = {
@@ -122,7 +124,15 @@ export class PlansService {
       qb.orderBy('p.end_date', 'ASC');
     }
 
-    const [data, total] = await qb.getManyAndCount();
+    const [plans, total] = await qb.getManyAndCount();
+
+    const studentIds = [...new Set(plans.map((p) => p.studentId))];
+    const students = studentIds.length
+      ? await this.dataSource.getRepository(Student).findByIds(studentIds)
+      : [];
+    const studentMap = new Map(students.map((s) => [s.id, s.fullName]));
+
+    const data = plans.map((plan) => ({ ...plan, studentName: studentMap.get(plan.studentId) ?? '' }));
     return { data, total };
   }
 

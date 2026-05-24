@@ -23,6 +23,10 @@ import { AgendaWeekPage } from './features/schedule/pages/AgendaWeekPage';
 import { AgendaDayPage } from './features/schedule/pages/AgendaDayPage';
 import { DropInsListPage } from './features/drop-ins/pages/DropInsListPage';
 import { DropInFormPage } from './features/drop-ins/pages/DropInFormPage';
+import { ReceivablesPage } from './features/financial/pages/ReceivablesPage';
+import { PayablesPage } from './features/financial/pages/PayablesPage';
+import { ReceivableFormPage } from './features/financial/pages/ReceivableFormPage';
+import { PayableFormPage } from './features/financial/pages/PayableFormPage';
 import { posthog } from './lib/posthog';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
@@ -93,6 +97,12 @@ export function App() {
                     <Route path="/agenda/dia/:date?" element={<AgendaDayPage />} />
                     <Route path="/drop-ins" element={<DropInsListPage />} />
                     <Route path="/drop-ins/new" element={<DropInFormPage />} />
+                    <Route path="/financeiro/receber" element={<ReceivablesPage />} />
+                    <Route path="/financeiro/receber/novo" element={<ReceivableFormPage />} />
+                    <Route path="/financeiro/receber/:id/edit" element={<ReceivableFormPage />} />
+                    <Route path="/financeiro/pagar" element={<PayablesPage />} />
+                    <Route path="/financeiro/pagar/novo" element={<PayableFormPage />} />
+                    <Route path="/financeiro/pagar/:id/edit" element={<PayableFormPage />} />
                   </Route>
                 </Routes>
               </BrowserRouter>
