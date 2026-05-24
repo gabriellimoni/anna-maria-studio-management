@@ -1,6 +1,6 @@
 {
   "name": "@anna-maria/api",
-  "version": "0.0.23",
+  "version": "0.0.24",
   "private": true,
   "scripts": {
     "build": "nest build",
