@@ -15,6 +15,10 @@ import { StudentFormPage } from './features/students/pages/StudentFormPage';
 import { StudentDetailPage } from './features/students/pages/StudentDetailPage';
 import { PlanCatalogListPage } from './features/plan-catalog/pages/PlanCatalogListPage';
 import { PlanCatalogFormPage } from './features/plan-catalog/pages/PlanCatalogFormPage';
+import { PlansListPage } from './features/plans/pages/PlansListPage';
+import { PlanCreateWizardPage } from './features/plans/pages/PlanCreateWizardPage';
+import { PlanDetailPage } from './features/plans/pages/PlanDetailPage';
+import { PlanChangeSchedulePage } from './features/plans/pages/PlanChangeSchedulePage';
 import { posthog } from './lib/posthog';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
@@ -77,6 +81,10 @@ export function App() {
                     <Route path="/plan-catalog" element={<PlanCatalogListPage />} />
                     <Route path="/plan-catalog/new" element={<PlanCatalogFormPage />} />
                     <Route path="/plan-catalog/:id/edit" element={<PlanCatalogFormPage />} />
+                    <Route path="/plans" element={<PlansListPage />} />
+                    <Route path="/plans/new" element={<PlanCreateWizardPage />} />
+                    <Route path="/plans/:id" element={<PlanDetailPage />} />
+                    <Route path="/plans/:id/change-schedule" element={<PlanChangeSchedulePage />} />
                   </Route>
                 </Routes>
               </BrowserRouter>

@@ -15,7 +15,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import { Home, LibraryBooks, Menu as MenuIcon, People } from '@mui/icons-material';
+import { Assignment, Home, LibraryBooks, Menu as MenuIcon, People } from '@mui/icons-material';
 import { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
@@ -25,6 +25,7 @@ const DRAWER_WIDTH = 240;
 const navItems = [
   { label: 'Dashboard', icon: <Home />, path: '/' },
   { label: 'Alunos', icon: <People />, path: '/students' },
+  { label: 'Planos', icon: <Assignment />, path: '/plans' },
   { label: 'Catálogo de planos', icon: <LibraryBooks />, path: '/plan-catalog' },
 ];
 

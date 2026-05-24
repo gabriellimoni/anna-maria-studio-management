@@ -11,6 +11,7 @@ import { HealthController } from './health.controller';
 import { UserModule } from './user/user.module';
 import { StudentsModule } from './modules/students/students.module';
 import { PlanCatalogModule } from './modules/plan-catalog/plan-catalog.module';
+import { PlansModule } from './modules/plans/plans.module';
 import { validateEnv } from './config/env.validation';
 
 @Module({
@@ -34,6 +35,7 @@ import { validateEnv } from './config/env.validation';
     UserModule,
     StudentsModule,
     PlanCatalogModule,
+    PlansModule,
   ],
   providers: [
     {
