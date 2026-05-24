@@ -4,6 +4,7 @@ import {
   CircularProgress,
   InputAdornment,
   Paper,
+  TablePagination,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
@@ -23,14 +24,18 @@ export function StudentsListPage() {
   const showToast = useToast();
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<'true' | 'false' | undefined>('true');
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
 
   const { data, isLoading } = useStudents({
     search: search || undefined,
     isActive: activeFilter !== undefined ? activeFilter === 'true' : undefined,
-    pageSize: 50,
+    page: page + 1,
+    pageSize,
   });
 
   const archive = useArchiveStudent();
+  const total = data?.total ?? 0;
 
   const handleArchive = (id: string) => {
     archive.mutate(id, {
@@ -53,7 +58,7 @@ export function StudentsListPage() {
           size="small"
           placeholder="Buscar por nome…"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value); setPage(0); }}
           slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search fontSize="small" /></InputAdornment> } }}
           sx={{ width: 280 }}
         />
@@ -61,7 +66,7 @@ export function StudentsListPage() {
           size="small"
           exclusive
           value={activeFilter}
-          onChange={(_, v) => setActiveFilter(v)}
+          onChange={(_, v) => { setActiveFilter(v); setPage(0); }}
         >
           <ToggleButton value="true">Ativos</ToggleButton>
           <ToggleButton value="false">Inativos</ToggleButton>
@@ -75,6 +80,16 @@ export function StudentsListPage() {
           <StudentsTable students={data?.data ?? []} onArchive={handleArchive} />
         )}
       </Paper>
+      <TablePagination
+        component="div"
+        count={total}
+        page={page}
+        rowsPerPage={pageSize}
+        onPageChange={(_, p) => setPage(p)}
+        onRowsPerPageChange={(e) => { setPageSize(parseInt(e.target.value)); setPage(0); }}
+        rowsPerPageOptions={[10, 20, 50]}
+        labelRowsPerPage="Por página:"
+      />
     </Box>
   );
 }

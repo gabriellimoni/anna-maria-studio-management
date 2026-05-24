@@ -8,7 +8,9 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
+  TablePagination,
   TableRow,
   ToggleButton,
   ToggleButtonGroup,
@@ -31,18 +33,21 @@ export function RecurringExpensesPage() {
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [runDialogOpen, setRunDialogOpen] = useState(false);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
 
   const query =
     activeFilter === 'active'
-      ? { isActive: true }
+      ? { isActive: true, page: page + 1, pageSize }
       : activeFilter === 'inactive'
-        ? { isActive: false }
-        : {};
+        ? { isActive: false, page: page + 1, pageSize }
+        : { page: page + 1, pageSize };
 
   const { data, isLoading } = useRecurringExpenses(query);
   const deleteMutation = useDeleteRecurringExpense();
 
   const rows: RecurringExpense[] = data?.data ?? [];
+  const total = data?.total ?? 0;
 
   function handleDelete(rule: RecurringExpense) {
     if (!window.confirm(`Excluir despesa recorrente "${rule.description}"?`)) return;
@@ -71,7 +76,7 @@ export function RecurringExpensesPage() {
           size="small"
           value={activeFilter}
           exclusive
-          onChange={(_, v) => v && setActiveFilter(v)}
+          onChange={(_, v) => { if (v) { setActiveFilter(v); setPage(0); } }}
         >
           <ToggleButton value="all">Todas</ToggleButton>
           <ToggleButton value="active">Ativas</ToggleButton>
@@ -135,6 +140,19 @@ export function RecurringExpensesPage() {
                 </TableRow>
               ))}
             </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TablePagination
+                  count={total}
+                  page={page}
+                  rowsPerPage={pageSize}
+                  onPageChange={(_, p) => setPage(p)}
+                  onRowsPerPageChange={(e) => { setPageSize(parseInt(e.target.value)); setPage(0); }}
+                  rowsPerPageOptions={[10, 20, 50]}
+                  labelRowsPerPage="Por página:"
+                />
+              </TableRow>
+            </TableFooter>
           </Table>
         </Paper>
       )}

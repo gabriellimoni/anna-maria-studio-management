@@ -11,7 +11,9 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
+  TablePagination,
   TableRow,
   Typography,
 } from '@mui/material';
@@ -39,14 +41,18 @@ export function PlansListPage() {
   const navigate = useNavigate();
   const [expiringInDays, setExpiringInDays] = useState<7 | 30 | 60 | 90 | undefined>();
   const [status, setStatus] = useState<PlanStatus | ''>('');
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
 
   const query: ListPlansQuery = {
     expiringInDays,
     status: status || undefined,
-    pageSize: 50,
+    page: page + 1,
+    pageSize,
   };
 
   const { data, isLoading } = usePlans(query);
+  const total = data?.total ?? 0;
 
   return (
     <Box sx={{ p: 3 }}>
@@ -58,13 +64,13 @@ export function PlansListPage() {
       </Box>
 
       <Box sx={{ mb: 2 }}>
-        <ExpiryFilterChips value={expiringInDays} onChange={setExpiringInDays} />
+        <ExpiryFilterChips value={expiringInDays} onChange={(v) => { setExpiringInDays(v); setPage(0); }} />
       </Box>
 
       <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
         <FormControl size="small" sx={{ minWidth: 150 }}>
           <InputLabel>Status</InputLabel>
-          <Select label="Status" value={status} onChange={(e) => setStatus(e.target.value as PlanStatus | '')}>
+          <Select label="Status" value={status} onChange={(e) => { setStatus(e.target.value as PlanStatus | ''); setPage(0); }}>
             <MenuItem value="">Todos</MenuItem>
             <MenuItem value="active">Ativo</MenuItem>
             <MenuItem value="finished">Encerrado</MenuItem>
@@ -121,6 +127,19 @@ export function PlansListPage() {
                 })
               )}
             </TableBody>
+            <TableFooter>
+              <TableRow>
+                <TablePagination
+                  count={total}
+                  page={page}
+                  rowsPerPage={pageSize}
+                  onPageChange={(_, p) => setPage(p)}
+                  onRowsPerPageChange={(e) => { setPageSize(parseInt(e.target.value)); setPage(0); }}
+                  rowsPerPageOptions={[10, 20, 50]}
+                  labelRowsPerPage="Por página:"
+                />
+              </TableRow>
+            </TableFooter>
           </Table>
         )}
       </Paper>

@@ -1,4 +1,4 @@
-import { Box, Button, CircularProgress, Paper, TextField, Typography } from '@mui/material';
+import { Box, Button, CircularProgress, Paper, TablePagination, TextField, Typography } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Payable } from '@anna-maria/contracts';
@@ -22,12 +22,16 @@ export function PayablesPage() {
 
   const [payTarget, setPayTarget] = useState<Payable | null>(null);
   const [unpayTarget, setUnpayTarget] = useState<Payable | null>(null);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
 
   const query = {
     ...(status !== 'all' ? { status } : {}),
     ...(from ? { from } : {}),
     ...(to ? { to } : {}),
     ...(competenceMonth ? { competenceMonth } : {}),
+    page: page + 1,
+    pageSize,
   };
 
   const { data, isLoading } = usePayables(query);
@@ -77,11 +81,11 @@ export function PayablesPage() {
 
       <FinancialFiltersBar
         status={status}
-        onStatusChange={setStatus}
+        onStatusChange={(v) => { setStatus(v); setPage(0); }}
         from={from}
-        onFromChange={setFrom}
+        onFromChange={(v) => { setFrom(v); setPage(0); }}
         to={to}
-        onToChange={setTo}
+        onToChange={(v) => { setTo(v); setPage(0); }}
       />
 
       <Box sx={{ mb: 2 }}>
@@ -90,7 +94,7 @@ export function PayablesPage() {
           type="month"
           size="small"
           value={competenceMonth}
-          onChange={(e) => setCompetenceMonth(e.target.value)}
+          onChange={(e) => { setCompetenceMonth(e.target.value); setPage(0); }}
           slotProps={{ inputLabel: { shrink: true } }}
           sx={{ width: 200 }}
         />
@@ -114,9 +118,19 @@ export function PayablesPage() {
           </Paper>
           <Box sx={{ mt: 2 }}>
             <Typography variant="body2" color="text.secondary">
-              Total: {total} | Pendentes: {pending} | Pagas: {paid} | Atrasadas: {overdue}
+              {total} lançamentos | Pendentes: {pending} | Pagas: {paid} | Atrasadas: {overdue}
             </Typography>
           </Box>
+          <TablePagination
+            component="div"
+            count={total}
+            page={page}
+            rowsPerPage={pageSize}
+            onPageChange={(_, p) => setPage(p)}
+            onRowsPerPageChange={(e) => { setPageSize(parseInt(e.target.value)); setPage(0); }}
+            rowsPerPageOptions={[10, 20, 50]}
+            labelRowsPerPage="Por página:"
+          />
         </>
       )}
 

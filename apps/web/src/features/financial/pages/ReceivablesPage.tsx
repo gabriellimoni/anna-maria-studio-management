@@ -1,4 +1,4 @@
-import { Box, Button, CircularProgress, Paper, Typography } from '@mui/material';
+import { Box, Button, CircularProgress, Paper, TablePagination, Typography } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Receivable } from '@anna-maria/contracts';
@@ -22,6 +22,8 @@ export function ReceivablesPage() {
 
   const [payTarget, setPayTarget] = useState<Receivable | null>(null);
   const [unpayTarget, setUnpayTarget] = useState<Receivable | null>(null);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
 
   const query = {
     ...(status !== 'all' ? { status } : {}),
@@ -29,6 +31,8 @@ export function ReceivablesPage() {
     ...(to ? { to } : {}),
     ...(invoiceFilter === 'invoiced' ? { invoiceGenerated: true } : {}),
     ...(invoiceFilter === 'not_invoiced' ? { invoiceGenerated: false } : {}),
+    page: page + 1,
+    pageSize,
   };
 
   const { data, isLoading } = useReceivables(query);
@@ -97,13 +101,13 @@ export function ReceivablesPage() {
 
       <FinancialFiltersBar
         status={status}
-        onStatusChange={setStatus}
+        onStatusChange={(v) => { setStatus(v); setPage(0); }}
         from={from}
-        onFromChange={setFrom}
+        onFromChange={(v) => { setFrom(v); setPage(0); }}
         to={to}
-        onToChange={setTo}
+        onToChange={(v) => { setTo(v); setPage(0); }}
         invoiceFilter={invoiceFilter}
-        onInvoiceFilterChange={setInvoiceFilter}
+        onInvoiceFilterChange={(v) => { setInvoiceFilter(v); setPage(0); }}
       />
 
       {isLoading ? (
@@ -132,6 +136,16 @@ export function ReceivablesPage() {
               {total} lançamentos | Pendentes: {pending} | Pagas: {paid} | Atrasadas: {overdue}
             </Typography>
           </Box>
+          <TablePagination
+            component="div"
+            count={total}
+            page={page}
+            rowsPerPage={pageSize}
+            onPageChange={(_, p) => setPage(p)}
+            onRowsPerPageChange={(e) => { setPageSize(parseInt(e.target.value)); setPage(0); }}
+            rowsPerPageOptions={[10, 20, 50]}
+            labelRowsPerPage="Por página:"
+          />
         </>
       )}
 
