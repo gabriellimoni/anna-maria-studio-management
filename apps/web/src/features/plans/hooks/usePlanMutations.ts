@@ -34,6 +34,14 @@ export function useCancelPlan(id: string) {
   });
 }
 
+export function useFinishPlan(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => plansApi.finish(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['plans'] }),
+  });
+}
+
 export function useCheckCapacity() {
   return useMutation({
     mutationFn: (p: { weekday: number; startTime: string; from: string; to: string }) =>

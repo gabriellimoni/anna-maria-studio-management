@@ -57,6 +57,9 @@ export const plansApi = {
       .post<{ cancelledFutureSessions: number; pendingReceivables: unknown[] }>(`/plans/${id}/cancel`, data)
       .then((r) => r.data),
 
+  finish: (id: string) =>
+    apiClient.post<Plan>(`/plans/${id}/finish`).then((r) => r.data),
+
   checkCapacity: (params: { weekday: number; startTime: string; from: string; to: string }) =>
     apiClient
       .get<{ slots: { scheduledAt: string; occupied: number; isOverCapacity: boolean }[] }>('/plans/check-capacity', { params })

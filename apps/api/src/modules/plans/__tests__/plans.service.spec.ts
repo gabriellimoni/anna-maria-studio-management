@@ -371,13 +371,12 @@ describe('PlansService (integration)', () => {
       expect(renewed.generated.receivables).toBe(3);
 
       const [originalPlan] = await ds.query(`SELECT status FROM plan WHERE id = $1`, [originalId]);
-      expect(originalPlan.status).toBe('active');
+      expect(originalPlan.status).toBe('finished');
     });
   });
 
   describe('findAll()', () => {
     it('returns only plans expiring within expiringInDays, sorted by endDate ASC', async () => {
-      // Create a plan expiring in 5 days (end_date = today + 5)
       const soonEndDate = format(addDays(new Date(), 5), 'yyyy-MM-dd');
       const farEndDate = format(addDays(new Date(), 100), 'yyyy-MM-dd');
 
@@ -411,6 +410,130 @@ describe('PlansService (integration)', () => {
       const result = await service.findAll({ expiringInDays: 30 });
       expect(result.data.length).toBe(1);
       expect(result.data[0].endDate).toBe(soonEndDate);
+    });
+
+    it('excludes finished and cancelled plans from expiringInDays results', async () => {
+      const soonEndDate = format(addDays(new Date(), 5), 'yyyy-MM-dd');
+
+      await ds.getRepository(Plan).save(
+        ds.getRepository(Plan).create({
+          studentId: student.id,
+          planCatalogId: catalog.id,
+          period: 'quarterly',
+          weeklyFrequency: 2,
+          startDate: '2026-01-01',
+          endDate: soonEndDate,
+          totalPrice: '450.00',
+          installmentsCount: 1,
+          status: 'finished',
+        }),
+      );
+      await ds.getRepository(Plan).save(
+        ds.getRepository(Plan).create({
+          studentId: student.id,
+          planCatalogId: catalog.id,
+          period: 'quarterly',
+          weeklyFrequency: 2,
+          startDate: '2026-01-01',
+          endDate: soonEndDate,
+          totalPrice: '450.00',
+          installmentsCount: 1,
+          status: 'cancelled',
+        }),
+      );
+
+      const result = await service.findAll({ expiringInDays: 30 });
+      expect(result.data.length).toBe(0);
+    });
+  });
+
+  describe('finish()', () => {
+    it('sets plan status to finished', async () => {
+      const dto: CreatePlanDto = {
+        studentId: student.id,
+        planCatalogId: catalog.id,
+        startDate: '2026-06-01',
+        totalPrice: '450.00',
+        schedules: SCHEDULES_2X,
+        installments: INSTALLMENTS_3,
+      };
+      const created = await service.create(dto);
+      const planId = (created as any).id;
+
+      const result = await service.finish(planId);
+      expect(result.status).toBe('finished');
+
+      const [row] = await ds.query(`SELECT status FROM plan WHERE id = $1`, [planId]);
+      expect(row.status).toBe('finished');
+    });
+
+    it('throws NotFoundException for unknown plan', async () => {
+      await expect(service.finish('00000000-0000-0000-0000-000000000000')).rejects.toThrow('not found');
+    });
+
+    it('throws BadRequestException when already finished', async () => {
+      const dto: CreatePlanDto = {
+        studentId: student.id,
+        planCatalogId: catalog.id,
+        startDate: '2026-06-01',
+        totalPrice: '450.00',
+        schedules: SCHEDULES_2X,
+        installments: INSTALLMENTS_3,
+      };
+      const created = await service.create(dto);
+      const planId = (created as any).id;
+      await service.finish(planId);
+
+      await expect(service.finish(planId)).rejects.toThrow('already finished');
+    });
+
+    it('throws BadRequestException when plan is cancelled', async () => {
+      const dto: CreatePlanDto = {
+        studentId: student.id,
+        planCatalogId: catalog.id,
+        startDate: '2026-06-01',
+        totalPrice: '450.00',
+        schedules: SCHEDULES_2X,
+        installments: INSTALLMENTS_3,
+      };
+      const created = await service.create(dto);
+      const planId = (created as any).id;
+      await service.cancel(planId, { cancelFutureSessions: false });
+
+      await expect(service.finish(planId)).rejects.toThrow('already cancelled');
+    });
+  });
+
+  describe('create() auto-finish', () => {
+    it('finishes other active plans for the same student when creating a new plan', async () => {
+      const firstDto: CreatePlanDto = {
+        studentId: student.id,
+        planCatalogId: catalog.id,
+        startDate: '2026-06-01',
+        totalPrice: '450.00',
+        schedules: SCHEDULES_2X,
+        installments: INSTALLMENTS_3,
+      };
+      const first = await service.create(firstDto);
+      const firstId = (first as any).id;
+
+      const secondDto: CreatePlanDto = {
+        studentId: student.id,
+        planCatalogId: catalog.id,
+        startDate: '2026-09-01',
+        totalPrice: '450.00',
+        schedules: SCHEDULES_2X,
+        installments: [
+          { amount: '150.00', dueDate: '2026-09-10' },
+          { amount: '150.00', dueDate: '2026-10-10' },
+          { amount: '150.00', dueDate: '2026-11-10' },
+        ],
+      };
+      const second = await service.create(secondDto);
+      expect((second as any).status).toBe('active');
+
+      const [firstRow] = await ds.query(`SELECT status FROM plan WHERE id = $1`, [firstId]);
+      expect(firstRow.status).toBe('finished');
     });
   });
 });

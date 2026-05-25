@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { addDays, addMonths, format, parseISO, subDays } from 'date-fns';
 import { DataSource, MoreThanOrEqual } from 'typeorm';
@@ -63,6 +63,22 @@ export class PlansService {
         }),
       );
 
+      const otherActivePlans = await manager
+        .createQueryBuilder(Plan, 'p')
+        .where('p.student_id = :studentId', { studentId: dto.studentId })
+        .andWhere("p.status = 'active'")
+        .andWhere('p.id != :newId', { newId: plan.id })
+        .getMany();
+
+      if (otherActivePlans.length > 0) {
+        await manager
+          .createQueryBuilder()
+          .update(Plan)
+          .set({ status: 'finished' })
+          .where('id IN (:...ids)', { ids: otherActivePlans.map((p) => p.id) })
+          .execute();
+      }
+
       await manager.save(
         dto.schedules.map((s) => manager.create(PlanSchedule, { planId: plan.id, weekday: s.weekday, startTime: s.startTime })),
       );
@@ -121,6 +137,7 @@ export class PlansService {
     if (query.expiringInDays !== undefined) {
       const cutoff = format(addDays(new Date(), query.expiringInDays), 'yyyy-MM-dd');
       qb.andWhere('p.end_date <= :cutoff', { cutoff });
+      qb.andWhere("p.status = 'active'");
       qb.orderBy('p.end_date', 'ASC');
     }
 
@@ -285,6 +302,21 @@ export class PlansService {
       });
 
       return { cancelledFutureSessions, pendingReceivables };
+    });
+  }
+
+  async finish(id: string) {
+    return this.dataSource.transaction(async (manager) => {
+      const plan = await manager.findOne(Plan, { where: { id } });
+      if (!plan) throw new NotFoundException(`Plan ${id} not found`);
+      if (plan.status === 'finished' || plan.status === 'cancelled') {
+        throw new BadRequestException(`Plan is already ${plan.status}`);
+      }
+
+      plan.status = 'finished';
+      await manager.save(plan);
+
+      return planToResponse(plan);
     });
   }
 

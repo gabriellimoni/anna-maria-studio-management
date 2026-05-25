@@ -24,7 +24,7 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { PlanStatus, Receivable, SessionStatus } from '@anna-maria/contracts';
 import { usePlan } from '../hooks/usePlan';
-import { useCancelPlan } from '../hooks/usePlanMutations';
+import { useCancelPlan, useFinishPlan } from '../hooks/usePlanMutations';
 import { useSessions } from '../../schedule/hooks/useSessions';
 import { AttendanceDialog } from '../../schedule/components/AttendanceDialog';
 import type { Session } from '@anna-maria/contracts';
@@ -73,9 +73,11 @@ export function PlanDetailPage() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelFutureSessions, setCancelFutureSessions] = useState(true);
+  const [finishOpen, setFinishOpen] = useState(false);
 
   const { data: plan, isLoading } = usePlan(id ?? '');
   const cancelPlan = useCancelPlan(id ?? '');
+  const finishPlan = useFinishPlan(id ?? '');
   const [attendanceSession, setAttendanceSession] = useState<Session | null>(null);
 
   const { data: sessionsData, isLoading: sessionsLoading } = useSessions(
@@ -118,6 +120,16 @@ export function PlanDetailPage() {
     });
   };
 
+  const handleFinish = () => {
+    finishPlan.mutate(undefined, {
+      onSuccess: () => {
+        showToast('Plano encerrado', 'success');
+        setFinishOpen(false);
+      },
+      onError: (err) => showToast(getApiError(err, 'Erro ao encerrar plano'), 'error'),
+    });
+  };
+
   const handleCancel = () => {
     cancelPlan.mutate(
       { reason: cancelReason || undefined, cancelFutureSessions },
@@ -147,6 +159,9 @@ export function PlanDetailPage() {
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button variant="outlined" onClick={() => navigate(`/plans/${id}/change-schedule`)}>
               Trocar horário
+            </Button>
+            <Button variant="outlined" onClick={() => setFinishOpen(true)}>
+              Encerrar plano
             </Button>
             <Button color="error" variant="outlined" onClick={() => setCancelOpen(true)}>
               Cancelar
@@ -327,6 +342,21 @@ export function PlanDetailPage() {
       )}
 
       {tab === 2 && id && <PlanContractSection planId={id} />}
+
+      <Dialog open={finishOpen} onClose={() => setFinishOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Encerrar plano</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ pt: 1 }}>
+            Tem certeza que deseja encerrar este plano? Parcelas e atendimentos não serão alterados.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setFinishOpen(false)}>Cancelar</Button>
+          <Button onClick={handleFinish} disabled={finishPlan.isPending}>
+            {finishPlan.isPending ? <CircularProgress size={20} /> : 'Encerrar'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={cancelOpen} onClose={() => setCancelOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Cancelar plano</DialogTitle>

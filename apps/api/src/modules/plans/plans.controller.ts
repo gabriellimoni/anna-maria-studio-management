@@ -71,4 +71,10 @@ export class PlansController {
   cancel(@Param('id', ParseUUIDPipe) id: string, @Body() dto: CancelPlanDto) {
     return this.plansService.cancel(id, dto);
   }
+
+  @Post(':id/finish')
+  @HttpCode(200)
+  finish(@Param('id', ParseUUIDPipe) id: string) {
+    return this.plansService.finish(id);
+  }
 }
