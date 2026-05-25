@@ -14,17 +14,31 @@ import {
   Tabs,
   Typography,
 } from '@mui/material';
-import { Edit } from '@mui/icons-material';
+import { Add, Edit, Visibility } from '@mui/icons-material';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import type { Session, SessionStatus } from '@anna-maria/contracts';
+import type { PlanStatus, Session, SessionStatus } from '@anna-maria/contracts';
 import { useStudent } from '../hooks/useStudent';
 import { useArchiveStudent } from '../hooks/useStudentMutations';
 import { useSessions } from '../../schedule/hooks/useSessions';
+import { usePlans } from '../../plans/hooks/usePlans';
 import { AttendanceDialog } from '../../schedule/components/AttendanceDialog';
 import { CancelSessionDialog } from '../../schedule/components/CancelSessionDialog';
 import { useToast } from '../../../components/ToastProvider';
 import { getApiError } from '../../../api/client';
+
+const PLAN_STATUS_LABELS: Record<PlanStatus, { label: string; color: 'success' | 'default' | 'error' }> = {
+  active: { label: 'Ativo', color: 'success' },
+  finished: { label: 'Encerrado', color: 'default' },
+  cancelled: { label: 'Cancelado', color: 'error' },
+};
+
+const PERIOD_LABELS: Record<string, string> = {
+  monthly: 'Mensal',
+  quarterly: 'Trimestral',
+  semiannual: 'Semestral',
+  annual: 'Anual',
+};
 
 const STATUS_LABELS: Record<SessionStatus, string> = {
   scheduled: 'Agendado',
@@ -61,6 +75,9 @@ export function StudentDetailPage() {
   const [cancelSession, setCancelSession] = useState<Session | null>(null);
 
   const { data: student, isLoading } = useStudent(id ?? '');
+  const { data: plansData, isLoading: plansLoading } = usePlans(
+    tab === 1 ? { studentId: id, pageSize: 100 } : undefined,
+  );
   const { data: sessionsData, isLoading: sessionsLoading } = useSessions(
     tab === 2 ? { studentId: id, pageSize: 100 } : undefined,
   );
@@ -120,7 +137,60 @@ export function StudentDetailPage() {
       )}
 
       {tab === 1 && (
-        <Typography color="text.secondary">Nenhum plano contratado.</Typography>
+        <Box>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => navigate(`/plans/new?studentId=${id}`)}
+            >
+              Novo plano
+            </Button>
+          </Box>
+          {plansLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
+          ) : !plansData?.data.length ? (
+            <Typography color="text.secondary">Nenhum plano contratado.</Typography>
+          ) : (
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Período</TableCell>
+                  <TableCell>Frequência</TableCell>
+                  <TableCell>Validade</TableCell>
+                  <TableCell>Valor total</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell />
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {plansData.data.map((plan) => {
+                  const st = PLAN_STATUS_LABELS[plan.status] ?? { label: plan.status, color: 'default' as const };
+                  return (
+                    <TableRow key={plan.id} hover>
+                      <TableCell>{PERIOD_LABELS[plan.period] ?? plan.period}</TableCell>
+                      <TableCell>{plan.weeklyFrequency}x/semana</TableCell>
+                      <TableCell>{plan.startDate} → {plan.endDate}</TableCell>
+                      <TableCell>R$ {plan.totalPrice}</TableCell>
+                      <TableCell>
+                        <Chip label={st.label} color={st.color} size="small" />
+                      </TableCell>
+                      <TableCell align="right">
+                        <Button
+                          size="small"
+                          startIcon={<Visibility />}
+                          onClick={() => navigate(`/plans/${plan.id}`)}
+                        >
+                          Ver
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </Box>
       )}
 
       {tab === 2 && (

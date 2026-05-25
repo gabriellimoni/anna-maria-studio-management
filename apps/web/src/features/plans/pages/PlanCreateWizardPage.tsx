@@ -12,7 +12,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { CreatePlanInput, InstallmentInput } from '@anna-maria/contracts';
 import { useStudents } from '../../students/hooks/useStudents';
 import { usePlanCatalog } from '../../plan-catalog/hooks/usePlanCatalog';
@@ -33,9 +33,10 @@ interface ScheduleSlot {
 export function PlanCreateWizardPage() {
   const navigate = useNavigate();
   const showToast = useToast();
+  const [searchParams] = useSearchParams();
   const [activeStep, setActiveStep] = useState(0);
 
-  const [studentId, setStudentId] = useState<string>('');
+  const [studentId, setStudentId] = useState<string>(searchParams.get('studentId') ?? '');
   const [catalogId, setCatalogId] = useState<string>('');
   const [startDate, setStartDate] = useState('');
   const [totalPrice, setTotalPrice] = useState('');

@@ -22,9 +22,12 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import type { PlanStatus, Receivable } from '@anna-maria/contracts';
+import type { PlanStatus, Receivable, SessionStatus } from '@anna-maria/contracts';
 import { usePlan } from '../hooks/usePlan';
 import { useCancelPlan } from '../hooks/usePlanMutations';
+import { useSessions } from '../../schedule/hooks/useSessions';
+import { AttendanceDialog } from '../../schedule/components/AttendanceDialog';
+import type { Session } from '@anna-maria/contracts';
 import { useToast } from '../../../components/ToastProvider';
 import { getApiError } from '../../../api/client';
 import { useReceivables } from '../../financial/hooks/useReceivables';
@@ -37,6 +40,22 @@ const STATUS_LABELS: Record<PlanStatus, { label: string; color: 'success' | 'def
   active: { label: 'Ativo', color: 'success' },
   finished: { label: 'Encerrado', color: 'default' },
   cancelled: { label: 'Cancelado', color: 'error' },
+};
+
+const SESSION_STATUS_LABELS: Record<SessionStatus, string> = {
+  scheduled: 'Agendado',
+  present: 'Presente',
+  absence_notified: 'Falta justificada',
+  absence_unnotified: 'Falta',
+  cancelled: 'Cancelado',
+};
+
+const SESSION_STATUS_COLORS: Record<SessionStatus, 'default' | 'primary' | 'success' | 'warning' | 'error'> = {
+  scheduled: 'primary',
+  present: 'success',
+  absence_notified: 'warning',
+  absence_unnotified: 'error',
+  cancelled: 'default',
 };
 
 const PERIOD_LABELS: Record<string, string> = {
@@ -57,7 +76,11 @@ export function PlanDetailPage() {
 
   const { data: plan, isLoading } = usePlan(id ?? '');
   const cancelPlan = useCancelPlan(id ?? '');
+  const [attendanceSession, setAttendanceSession] = useState<Session | null>(null);
 
+  const { data: sessionsData, isLoading: sessionsLoading } = useSessions(
+    tab === 0 && id ? { planId: id, pageSize: 200 } : undefined,
+  );
   const { data: receivablesData } = useReceivables(id ? { planId: id } : undefined);
   const payReceivable = usePayReceivable();
   const unpayReceivable = useUnpayReceivable();
@@ -149,10 +172,19 @@ export function PlanDetailPage() {
           <Typography variant="caption" color="text.secondary">Parcelas</Typography>
           <Typography>{plan.installmentsCount}</Typography>
         </Box>
+        {plan.schedules.length > 0 && (
+          <Box>
+            <Typography variant="caption" color="text.secondary">Horários</Typography>
+            {plan.schedules.map((s) => (
+              <Typography key={s.id}>
+                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][s.weekday]} — {s.startTime}
+              </Typography>
+            ))}
+          </Box>
+        )}
       </Box>
 
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 0 }}>
-        <Tab label="Horários" />
         <Tab label="Atendimentos" />
         <Tab label="Parcelas" />
         <Tab label="Contrato" />
@@ -161,34 +193,74 @@ export function PlanDetailPage() {
 
       {tab === 0 && (
         <Box>
-          {plan.schedules.map((s) => (
-            <Box key={s.id} sx={{ mb: 1 }}>
-              <Typography>
-                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][s.weekday]} — {s.startTime}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
-      )}
-
-      {tab === 1 && (
-        <Box>
-          <Box sx={{ display: 'flex', gap: 3, mb: 2 }}>
+          <Box sx={{ display: 'flex', gap: 3, mb: 3, flexWrap: 'wrap' }}>
             <Box>
               <Typography variant="caption" color="text.secondary">Total</Typography>
               <Typography>{plan.summary.totalSessions}</Typography>
             </Box>
             {Object.entries(plan.summary.sessionsByStatus).map(([status, count]) => (
               <Box key={status}>
-                <Typography variant="caption" color="text.secondary">{status}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {SESSION_STATUS_LABELS[status as SessionStatus] ?? status}
+                </Typography>
                 <Typography>{count}</Typography>
               </Box>
             ))}
           </Box>
+          {sessionsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
+          ) : !sessionsData?.data.length ? (
+            <Typography color="text.secondary">Nenhum atendimento registrado.</Typography>
+          ) : (
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Data</TableCell>
+                  <TableCell>Horário</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Observações</TableCell>
+                  <TableCell />
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {sessionsData.data.map((session) => {
+                  const dt = new Date(session.scheduledAt);
+                  return (
+                    <TableRow key={session.id}>
+                      <TableCell>{dt.toLocaleDateString('pt-BR')}</TableCell>
+                      <TableCell>{dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={SESSION_STATUS_LABELS[session.status]}
+                          color={SESSION_STATUS_COLORS[session.status]}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell sx={{ maxWidth: 200, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                        {session.notes ?? '—'}
+                      </TableCell>
+                      <TableCell align="right">
+                        {session.status !== 'cancelled' && (
+                          <Button size="small" onClick={() => setAttendanceSession(session)}>
+                            Editar
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+          <AttendanceDialog
+            open={!!attendanceSession}
+            session={attendanceSession}
+            onClose={() => setAttendanceSession(null)}
+          />
         </Box>
       )}
 
-      {tab === 2 && (
+      {tab === 1 && (
         <>
           <Table size="small">
             <TableHead>
@@ -254,7 +326,7 @@ export function PlanDetailPage() {
         </>
       )}
 
-      {tab === 3 && id && <PlanContractSection planId={id} />}
+      {tab === 2 && id && <PlanContractSection planId={id} />}
 
       <Dialog open={cancelOpen} onClose={() => setCancelOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Cancelar plano</DialogTitle>
