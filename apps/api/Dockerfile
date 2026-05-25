@@ -17,7 +17,7 @@ RUN pnpm --filter @anna-maria/api build
 
 # ── standalone deploy bundle (prod deps only, no workspace symlinks) ───────────
 FROM build AS deploy
-RUN pnpm --filter @anna-maria/api deploy --prod /app/standalone
+RUN pnpm --filter @anna-maria/api deploy --prod --legacy /app/standalone
 
 # ── runtime image ─────────────────────────────────────────────────────────────
 FROM node:24-alpine AS runtime
