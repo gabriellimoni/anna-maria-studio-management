@@ -6,6 +6,8 @@ import type {
   RecurringExpense as RecurringExpenseContract,
   RunGenerationResult,
 } from '@anna-maria/contracts';
+import { EventService } from '../../event/event.service';
+import { User } from '../../user/user.entity';
 import { PayableGeneratorService } from '../scheduling/services/payable-generator.service';
 import { RecurringExpense } from './entities/recurring-expense.entity';
 import { CreateRecurringExpenseDto } from './dto/create-recurring-expense.dto';
@@ -33,6 +35,7 @@ export class RecurringExpensesService {
     @InjectDataSource()
     private readonly dataSource: DataSource,
     private readonly payableGenerator: PayableGeneratorService,
+    private readonly eventService: EventService,
   ) {}
 
   async findAll(query: ListRecurringExpensesQuery): Promise<PaginatedRecurringExpenses> {
@@ -54,30 +57,57 @@ export class RecurringExpensesService {
     return toContract(r);
   }
 
-  async create(dto: CreateRecurringExpenseDto): Promise<RecurringExpenseContract> {
-    const r = this.repo.create({ ...dto, isActive: true });
-    await this.repo.save(r);
-    return toContract(r);
+  async create(dto: CreateRecurringExpenseDto, user: User): Promise<RecurringExpenseContract> {
+    return this.dataSource.transaction(async (manager) => {
+      const r = manager.create(RecurringExpense, { ...dto, isActive: true });
+      const saved = await manager.save(RecurringExpense, r);
+      await this.eventService.record(manager, {
+        action: 'recurring_expense.created',
+        entity: 'recurring_expense',
+        entityId: saved.id,
+        userId: user.id,
+        dto: { description: dto.description, expectedAmount: dto.expectedAmount, dueDay: dto.dueDay },
+      });
+      return toContract(saved);
+    });
   }
 
-  async update(id: string, dto: UpdateRecurringExpenseDto): Promise<RecurringExpenseContract> {
-    const r = await this.repo.findOne({ where: { id } });
-    if (!r) throw new NotFoundException(`RecurringExpense ${id} not found`);
+  async update(id: string, dto: UpdateRecurringExpenseDto, user: User): Promise<RecurringExpenseContract> {
+    return this.dataSource.transaction(async (manager) => {
+      const r = await manager.findOne(RecurringExpense, { where: { id } });
+      if (!r) throw new NotFoundException(`RecurringExpense ${id} not found`);
 
-    if (dto.description !== undefined) r.description = dto.description;
-    if (dto.category !== undefined) r.category = dto.category;
-    if (dto.expectedAmount !== undefined) r.expectedAmount = dto.expectedAmount;
-    if (dto.dueDay !== undefined) r.dueDay = dto.dueDay;
-    if (dto.isActive !== undefined) r.isActive = dto.isActive;
+      if (dto.description !== undefined) r.description = dto.description;
+      if (dto.category !== undefined) r.category = dto.category;
+      if (dto.expectedAmount !== undefined) r.expectedAmount = dto.expectedAmount;
+      if (dto.dueDay !== undefined) r.dueDay = dto.dueDay;
+      if (dto.isActive !== undefined) r.isActive = dto.isActive;
 
-    await this.repo.save(r);
-    return toContract(r);
+      const saved = await manager.save(RecurringExpense, r);
+      await this.eventService.record(manager, {
+        action: 'recurring_expense.updated',
+        entity: 'recurring_expense',
+        entityId: id,
+        userId: user.id,
+        dto: dto as Record<string, unknown>,
+      });
+      return toContract(saved);
+    });
   }
 
-  async remove(id: string): Promise<void> {
-    const r = await this.repo.findOne({ where: { id } });
-    if (!r) throw new NotFoundException(`RecurringExpense ${id} not found`);
-    await this.repo.delete(id);
+  async remove(id: string, user: User): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      const r = await manager.findOne(RecurringExpense, { where: { id } });
+      if (!r) throw new NotFoundException(`RecurringExpense ${id} not found`);
+      await manager.delete(RecurringExpense, { id });
+      await this.eventService.record(manager, {
+        action: 'recurring_expense.deleted',
+        entity: 'recurring_expense',
+        entityId: id,
+        userId: user.id,
+        dto: {},
+      });
+    });
   }
 
   async runForMonth(competenceMonth: Date): Promise<RunGenerationResult> {

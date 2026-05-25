@@ -11,6 +11,8 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { User } from '../../user/user.entity';
 import { PlansService } from './plans.service';
 import { CancelPlanDto } from './dto/cancel-plan.dto';
 import { ChangeScheduleDto } from './dto/change-schedule.dto';
@@ -40,8 +42,8 @@ export class PlansController {
   }
 
   @Post()
-  create(@Body() dto: CreatePlanDto) {
-    return this.plansService.create(dto);
+  create(@Body() dto: CreatePlanDto, @CurrentUser() user: User) {
+    return this.plansService.create(dto, user);
   }
 
   @Get(':id')
@@ -50,31 +52,31 @@ export class PlansController {
   }
 
   @Patch(':id')
-  updateBasics(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdatePlanDto) {
-    return this.plansService.updateBasics(id, dto);
+  updateBasics(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdatePlanDto, @CurrentUser() user: User) {
+    return this.plansService.updateBasics(id, dto, user);
   }
 
   @Post(':id/change-schedule')
   @HttpCode(200)
-  changeSchedule(@Param('id', ParseUUIDPipe) id: string, @Body() dto: ChangeScheduleDto) {
-    return this.plansService.changeSchedule(id, dto);
+  changeSchedule(@Param('id', ParseUUIDPipe) id: string, @Body() dto: ChangeScheduleDto, @CurrentUser() user: User) {
+    return this.plansService.changeSchedule(id, dto, user);
   }
 
   @Post(':id/renew')
   @HttpCode(200)
-  renew(@Param('id', ParseUUIDPipe) id: string, @Body() dto: RenewPlanDto) {
-    return this.plansService.renew(id, dto);
+  renew(@Param('id', ParseUUIDPipe) id: string, @Body() dto: RenewPlanDto, @CurrentUser() user: User) {
+    return this.plansService.renew(id, dto, user);
   }
 
   @Post(':id/cancel')
   @HttpCode(200)
-  cancel(@Param('id', ParseUUIDPipe) id: string, @Body() dto: CancelPlanDto) {
-    return this.plansService.cancel(id, dto);
+  cancel(@Param('id', ParseUUIDPipe) id: string, @Body() dto: CancelPlanDto, @CurrentUser() user: User) {
+    return this.plansService.cancel(id, dto, user);
   }
 
   @Post(':id/finish')
   @HttpCode(200)
-  finish(@Param('id', ParseUUIDPipe) id: string) {
-    return this.plansService.finish(id);
+  finish(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+    return this.plansService.finish(id, user);
   }
 }

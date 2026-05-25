@@ -1,7 +1,9 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
 import type { PaginatedPayables, Payable as PayableContract } from '@anna-maria/contracts';
+import { EventService } from '../../event/event.service';
+import { User } from '../../user/user.entity';
 import { Payable } from './entities/payable.entity';
 import { CreatePayableDto } from './dto/create-payable.dto';
 import { UpdatePayableDto } from './dto/update-payable.dto';
@@ -33,6 +35,9 @@ export class PayablesService {
   constructor(
     @InjectRepository(Payable)
     private readonly repo: Repository<Payable>,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
+    private readonly eventService: EventService,
   ) {}
 
   async findAll(query: ListPayablesQuery): Promise<PaginatedPayables> {
@@ -77,56 +82,92 @@ export class PayablesService {
     return toContract(p);
   }
 
-  async createManual(dto: CreatePayableDto): Promise<PayableContract> {
-    const p = this.repo.create({
-      source: 'manual',
-      recurringExpenseId: null,
-      competenceMonth: null,
-      status: 'pending',
-      description: dto.description,
-      category: dto.category ?? null,
-      amount: dto.amount,
-      dueDate: dto.dueDate,
-      paymentMethod: dto.paymentMethod ?? null,
+  async createManual(dto: CreatePayableDto, user: User): Promise<PayableContract> {
+    return this.dataSource.transaction(async (manager) => {
+      const p = manager.create(Payable, {
+        source: 'manual',
+        recurringExpenseId: null,
+        competenceMonth: null,
+        status: 'pending',
+        description: dto.description,
+        category: dto.category ?? null,
+        amount: dto.amount,
+        dueDate: dto.dueDate,
+        paymentMethod: dto.paymentMethod ?? null,
+      });
+      await manager.save(Payable, p);
+      await this.eventService.record(manager, {
+        action: 'payable.created',
+        entity: 'payable',
+        entityId: p.id,
+        userId: user.id,
+        dto: { description: dto.description, amount: dto.amount, dueDate: dto.dueDate },
+      });
+      return toContract(p);
     });
-    await this.repo.save(p);
-    return toContract(p);
   }
 
-  async update(id: string, dto: UpdatePayableDto): Promise<PayableContract> {
-    const p = await this.repo.findOne({ where: { id } });
-    if (!p) throw new NotFoundException(`Payable ${id} not found`);
+  async update(id: string, dto: UpdatePayableDto, user: User): Promise<PayableContract> {
+    return this.dataSource.transaction(async (manager) => {
+      const p = await manager.findOne(Payable, { where: { id } });
+      if (!p) throw new NotFoundException(`Payable ${id} not found`);
 
-    if (dto.description !== undefined) p.description = dto.description;
-    if (dto.category !== undefined) p.category = dto.category;
-    if (dto.amount !== undefined) p.amount = dto.amount;
-    if (dto.dueDate !== undefined) p.dueDate = dto.dueDate;
-    if (dto.paymentMethod !== undefined) p.paymentMethod = dto.paymentMethod;
+      if (dto.description !== undefined) p.description = dto.description;
+      if (dto.category !== undefined) p.category = dto.category;
+      if (dto.amount !== undefined) p.amount = dto.amount;
+      if (dto.dueDate !== undefined) p.dueDate = dto.dueDate;
+      if (dto.paymentMethod !== undefined) p.paymentMethod = dto.paymentMethod;
 
-    await this.repo.save(p);
-    return toContract(p);
+      await manager.save(Payable, p);
+      await this.eventService.record(manager, {
+        action: 'payable.updated',
+        entity: 'payable',
+        entityId: id,
+        userId: user.id,
+        dto: dto as Record<string, unknown>,
+      });
+      return toContract(p);
+    });
   }
 
-  async pay(id: string, dto: PayPayableDto): Promise<PayableContract> {
-    const p = await this.repo.findOne({ where: { id } });
-    if (!p) throw new NotFoundException(`Payable ${id} not found`);
-    if (p.status === 'paid') throw new ConflictException('Payable is already paid');
+  async pay(id: string, dto: PayPayableDto, user: User): Promise<PayableContract> {
+    return this.dataSource.transaction(async (manager) => {
+      const p = await manager.findOne(Payable, { where: { id } });
+      if (!p) throw new NotFoundException(`Payable ${id} not found`);
+      if (p.status === 'paid') throw new ConflictException('Payable is already paid');
 
-    p.status = 'paid';
-    p.paidAt = dto.paidAt;
-    p.paymentMethod = dto.paymentMethod;
-    await this.repo.save(p);
-    return toContract(p);
+      p.status = 'paid';
+      p.paidAt = dto.paidAt;
+      p.paymentMethod = dto.paymentMethod;
+      await manager.save(Payable, p);
+      await this.eventService.record(manager, {
+        action: 'payable.paid',
+        entity: 'payable',
+        entityId: id,
+        userId: user.id,
+        dto: { paidAt: dto.paidAt, paymentMethod: dto.paymentMethod },
+      });
+      return toContract(p);
+    });
   }
 
-  async unpay(id: string): Promise<PayableContract> {
-    const p = await this.repo.findOne({ where: { id } });
-    if (!p) throw new NotFoundException(`Payable ${id} not found`);
-    if (p.status === 'pending') throw new ConflictException('Payable is already pending');
+  async unpay(id: string, user: User): Promise<PayableContract> {
+    return this.dataSource.transaction(async (manager) => {
+      const p = await manager.findOne(Payable, { where: { id } });
+      if (!p) throw new NotFoundException(`Payable ${id} not found`);
+      if (p.status === 'pending') throw new ConflictException('Payable is already pending');
 
-    p.status = 'pending';
-    p.paidAt = null;
-    await this.repo.save(p);
-    return toContract(p);
+      p.status = 'pending';
+      p.paidAt = null;
+      await manager.save(Payable, p);
+      await this.eventService.record(manager, {
+        action: 'payable.unpaid',
+        entity: 'payable',
+        entityId: id,
+        userId: user.id,
+        dto: {},
+      });
+      return toContract(p);
+    });
   }
 }

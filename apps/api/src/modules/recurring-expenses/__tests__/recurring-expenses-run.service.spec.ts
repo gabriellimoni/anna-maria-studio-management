@@ -4,6 +4,7 @@ import { migrations } from '../../../database/data-source';
 import { RecurringExpense } from '../entities/recurring-expense.entity';
 import { PayableGeneratorService } from '../../scheduling/services/payable-generator.service';
 import { RecurringExpensesService } from '../recurring-expenses.service';
+import { EventService } from '../../../event/event.service';
 
 async function buildDataSource(container: StartedPostgreSqlContainer): Promise<DataSource> {
   const ds = new DataSource({
@@ -45,6 +46,7 @@ describe('RecurringExpensesService.runForMonth (integration)', () => {
       ds.getRepository(RecurringExpense),
       ds,
       new PayableGeneratorService(),
+      { record: jest.fn() } as unknown as EventService,
     );
   });
 

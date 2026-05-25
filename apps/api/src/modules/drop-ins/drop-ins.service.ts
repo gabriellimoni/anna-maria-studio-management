@@ -10,6 +10,8 @@ import type {
   ListDropInsQuery,
   SessionStatus,
 } from '@anna-maria/contracts';
+import { EventService } from '../../event/event.service';
+import { User } from '../../user/user.entity';
 import { Student } from '../students/entities/student.entity';
 import { Session } from '../sessions/entities/session.entity';
 import { Receivable } from '../receivables/entities/receivable.entity';
@@ -49,6 +51,7 @@ export class DropInsService {
   constructor(
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly capacityChecker: CapacityCheckerService,
+    private readonly eventService: EventService,
   ) {}
 
   private buildBaseQb() {
@@ -66,7 +69,7 @@ export class DropInsService {
       .orderBy('s.scheduled_at', 'DESC');
   }
 
-  async create(dto: CreateDropInDto): Promise<CreateDropInResponse> {
+  async create(dto: CreateDropInDto, user: User): Promise<CreateDropInResponse> {
     const hasBoth = !!dto.studentId && !!dto.prospectName;
     const hasNeither = !dto.studentId && !dto.prospectName;
     if (hasBoth || hasNeither) {
@@ -118,6 +121,14 @@ export class DropInsService {
         receivableId: receivable?.id ?? null,
       });
 
+      await this.eventService.record(manager, {
+        action: 'drop_in.created',
+        entity: 'drop_in',
+        entityId: dropIn.id,
+        userId: user.id,
+        dto: { scheduledAt: dto.scheduledAt, studentId: dto.studentId ?? null, prospectName: dto.prospectName ?? null },
+      });
+
       return {
         id: dropIn.id,
         sessionId: session.id,
@@ -153,25 +164,35 @@ export class DropInsService {
     return mapRaw(rows[0]);
   }
 
-  async update(id: string, dto: UpdateDropInDto): Promise<DropInClassContract> {
-    const dropIn = await this.dataSource.getRepository(DropInClass).findOneBy({ id });
-    if (!dropIn) throw new NotFoundException(`DropIn ${id} not found`);
+  async update(id: string, dto: UpdateDropInDto, user: User): Promise<DropInClassContract> {
+    return this.dataSource.transaction(async (manager) => {
+      const dropIn = await manager.findOne(DropInClass, { where: { id } });
+      if (!dropIn) throw new NotFoundException(`DropIn ${id} not found`);
 
-    if (dto.prospectName !== undefined) dropIn.prospectName = dto.prospectName;
-    await this.dataSource.getRepository(DropInClass).save(dropIn);
+      if (dto.prospectName !== undefined) dropIn.prospectName = dto.prospectName;
+      await manager.save(DropInClass, dropIn);
 
-    if (dto.notes !== undefined && dropIn.sessionId) {
-      const session = await this.dataSource.getRepository(Session).findOneBy({ id: dropIn.sessionId });
-      if (session) {
-        session.notes = dto.notes;
-        await this.dataSource.getRepository(Session).save(session);
+      if (dto.notes !== undefined && dropIn.sessionId) {
+        const session = await manager.findOne(Session, { where: { id: dropIn.sessionId } });
+        if (session) {
+          session.notes = dto.notes;
+          await manager.save(Session, session);
+        }
       }
-    }
 
-    return this.findOne(id);
+      await this.eventService.record(manager, {
+        action: 'drop_in.updated',
+        entity: 'drop_in',
+        entityId: id,
+        userId: user.id,
+        dto: dto as Record<string, unknown>,
+      });
+
+      return this.findOne(id);
+    });
   }
 
-  async remove(id: string): Promise<DeleteDropInResponse> {
+  async remove(id: string, user: User): Promise<DeleteDropInResponse> {
     const dropIn = await this.dataSource.getRepository(DropInClass).findOneBy({ id });
     if (!dropIn) throw new NotFoundException(`DropIn ${id} not found`);
 
@@ -193,6 +214,14 @@ export class DropInsService {
           pendingReceivableId = receivable.id;
         }
       }
+
+      await this.eventService.record(manager, {
+        action: 'drop_in.deleted',
+        entity: 'drop_in',
+        entityId: id,
+        userId: user.id,
+        dto: { sessionId },
+      });
 
       return { sessionId, ...(pendingReceivableId && { pendingReceivableId }) };
     });

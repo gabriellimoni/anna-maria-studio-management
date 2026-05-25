@@ -1,5 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { User } from '../../user/user.entity';
 import { RecurringExpensesService } from './recurring-expenses.service';
 import { CreateRecurringExpenseDto } from './dto/create-recurring-expense.dto';
 import { UpdateRecurringExpenseDto } from './dto/update-recurring-expense.dto';
@@ -18,8 +20,8 @@ export class RecurringExpensesController {
   }
 
   @Post()
-  create(@Body() dto: CreateRecurringExpenseDto) {
-    return this.service.create(dto);
+  create(@Body() dto: CreateRecurringExpenseDto, @CurrentUser() user: User) {
+    return this.service.create(dto, user);
   }
 
   @Get(':id')
@@ -28,13 +30,13 @@ export class RecurringExpensesController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateRecurringExpenseDto) {
-    return this.service.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateRecurringExpenseDto, @CurrentUser() user: User) {
+    return this.service.update(id, dto, user);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.service.remove(id, user);
   }
 
   @Post('run-generation')

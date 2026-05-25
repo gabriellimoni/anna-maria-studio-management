@@ -243,6 +243,21 @@ Jest runs in CJS mode. Some libraries are ESM-only and will cause `SyntaxError: 
 - **Class capacity of 4 students is a WARNING only, never a blocker.** The system shows a warning but never prevents enrollment.
 - `weekday` convention: 0=Sunday … 6=Saturday.
 
+### Domain event audit trail — HARD RULE
+
+**Every user-initiated mutating operation MUST record a domain event.** This is non-negotiable.
+
+Pattern (follow `ContractsService` as reference):
+1. Service method accepts `user: User` as a parameter.
+2. Wrap the operation in `this.dataSource.transaction(async (manager) => { ... })`.
+3. Call `this.eventService.record(manager, { action, entity, entityId, userId: user.id, dto })` inside the transaction, after the save.
+4. Controller injects `@CurrentUser() user: User` and passes it to the service method.
+5. Add `EventModule` to the module's `imports` array.
+
+Event naming convention: `<entity>.<past-tense-verb>` — e.g. `student.created`, `plan.cancelled`, `receivable.paid`.
+
+When adding a new domain, add unit tests that assert `eventService.record` was called with the correct `action` and `userId`.
+
 ## Testing requirements
 
 > **HARD RULE: No backend implementation is done until its tests are written and passing.** This is non-negotiable — a service, controller, scheduler, or any backend feature without tests is considered incomplete, regardless of whether the feature logic itself works.

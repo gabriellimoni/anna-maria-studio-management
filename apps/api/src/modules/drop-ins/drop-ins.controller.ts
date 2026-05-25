@@ -1,5 +1,7 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { User } from '../../user/user.entity';
 import { DropInsService } from './drop-ins.service';
 import { CreateDropInDto } from './dto/create-drop-in.dto';
 import { ListDropInsQuery } from './dto/list-drop-ins.query';
@@ -18,8 +20,8 @@ export class DropInsController {
 
   @Post()
   @HttpCode(201)
-  create(@Body() dto: CreateDropInDto) {
-    return this.dropInsService.create(dto);
+  create(@Body() dto: CreateDropInDto, @CurrentUser() user: User) {
+    return this.dropInsService.create(dto, user);
   }
 
   @Get(':id')
@@ -28,12 +30,12 @@ export class DropInsController {
   }
 
   @Patch(':id')
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateDropInDto) {
-    return this.dropInsService.update(id, dto);
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateDropInDto, @CurrentUser() user: User) {
+    return this.dropInsService.update(id, dto, user);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.dropInsService.remove(id);
+  remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
+    return this.dropInsService.remove(id, user);
   }
 }

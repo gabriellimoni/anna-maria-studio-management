@@ -1,5 +1,7 @@
 import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { User } from '../../user/user.entity';
 import { SessionsService } from './sessions.service';
 import { CalendarQuery } from './dto/calendar.query';
 import { CancelSessionDto } from './dto/cancel-session.dto';
@@ -28,13 +30,13 @@ export class SessionsController {
   }
 
   @Patch(':id')
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateSessionDto) {
-    return this.sessionsService.updateSession(id, dto);
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateSessionDto, @CurrentUser() user: User) {
+    return this.sessionsService.updateSession(id, dto, user);
   }
 
   @Post(':id/cancel')
   @HttpCode(200)
-  cancel(@Param('id', ParseUUIDPipe) id: string, @Body() dto: CancelSessionDto) {
-    return this.sessionsService.cancelSession(id, dto);
+  cancel(@Param('id', ParseUUIDPipe) id: string, @Body() dto: CancelSessionDto, @CurrentUser() user: User) {
+    return this.sessionsService.cancelSession(id, dto, user);
   }
 }

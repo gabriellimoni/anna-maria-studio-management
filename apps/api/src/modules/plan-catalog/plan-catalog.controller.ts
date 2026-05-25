@@ -11,6 +11,8 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { User } from '../../user/user.entity';
 import { PlanCatalogService } from './plan-catalog.service';
 import { CreatePlanCatalogDto } from './dto/create-plan-catalog.dto';
 import { UpdatePlanCatalogDto } from './dto/update-plan-catalog.dto';
@@ -24,8 +26,8 @@ export class PlanCatalogController {
 
   @Post()
   @ApiResponse({ status: 201 })
-  create(@Body() dto: CreatePlanCatalogDto) {
-    return this.service.create(dto);
+  create(@Body() dto: CreatePlanCatalogDto, @CurrentUser() user: User) {
+    return this.service.create(dto, user);
   }
 
   @Get()
@@ -40,13 +42,13 @@ export class PlanCatalogController {
 
   @Patch(':id')
   @ApiResponse({ description: 'Updating catalog does not affect existing contracted plans.' })
-  update(@Param('id') id: string, @Body() dto: UpdatePlanCatalogDto) {
-    return this.service.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdatePlanCatalogDto, @CurrentUser() user: User) {
+    return this.service.update(id, dto, user);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  archive(@Param('id') id: string) {
-    return this.service.archive(id);
+  archive(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.service.archive(id, user);
   }
 }

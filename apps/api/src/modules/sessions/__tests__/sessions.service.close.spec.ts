@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getDataSourceToken } from '@nestjs/typeorm';
+import { EventService } from '../../../event/event.service';
 import { SessionsService } from '../sessions.service';
 
 function makeQb(executeResult: { affected: number }) {
@@ -28,6 +29,7 @@ describe('SessionsService.closeOpenPastSessions (unit)', () => {
       providers: [
         SessionsService,
         { provide: getDataSourceToken(), useValue: mockDataSource },
+        { provide: EventService, useValue: { record: jest.fn() } },
       ],
     }).compile();
 

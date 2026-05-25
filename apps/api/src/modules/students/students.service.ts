@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+import { EventService } from '../../event/event.service';
+import { User } from '../../user/user.entity';
 import { Student } from './entities/student.entity';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
@@ -8,14 +10,27 @@ import { ListStudentsQuery } from './dto/list-students.query';
 
 @Injectable()
 export class StudentsService {
-  constructor(@InjectRepository(Student) private readonly repo: Repository<Student>) {}
+  constructor(
+    @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly eventService: EventService,
+  ) {}
 
-  async create(dto: CreateStudentDto): Promise<Student> {
-    return this.repo.save(this.repo.create({ ...dto, isActive: true }));
+  async create(dto: CreateStudentDto, user: User): Promise<Student> {
+    return this.dataSource.transaction(async (manager) => {
+      const student = await manager.save(Student, manager.create(Student, { ...dto, isActive: true }));
+      await this.eventService.record(manager, {
+        action: 'student.created',
+        entity: 'student',
+        entityId: student.id,
+        userId: user.id,
+        dto: { fullName: dto.fullName },
+      });
+      return student;
+    });
   }
 
   async findAll(query: ListStudentsQuery): Promise<{ data: Student[]; total: number }> {
-    const qb = this.repo.createQueryBuilder('s');
+    const qb = this.dataSource.getRepository(Student).createQueryBuilder('s');
 
     if (query.search) {
       qb.andWhere('s.full_name ILIKE :search', { search: `%${query.search}%` });
@@ -35,18 +50,39 @@ export class StudentsService {
   }
 
   async findOne(id: string): Promise<Student> {
-    const student = await this.repo.findOneBy({ id });
+    const student = await this.dataSource.getRepository(Student).findOneBy({ id });
     if (!student) throw new NotFoundException(`Student ${id} not found`);
     return student;
   }
 
-  async update(id: string, dto: UpdateStudentDto): Promise<Student> {
-    const student = await this.findOne(id);
-    return this.repo.save({ ...student, ...dto });
+  async update(id: string, dto: UpdateStudentDto, user: User): Promise<Student> {
+    return this.dataSource.transaction(async (manager) => {
+      const student = await manager.findOne(Student, { where: { id } });
+      if (!student) throw new NotFoundException(`Student ${id} not found`);
+      const saved = await manager.save(Student, { ...student, ...dto });
+      await this.eventService.record(manager, {
+        action: 'student.updated',
+        entity: 'student',
+        entityId: id,
+        userId: user.id,
+        dto: dto as Record<string, unknown>,
+      });
+      return saved;
+    });
   }
 
-  async archive(id: string): Promise<void> {
-    const student = await this.findOne(id);
-    await this.repo.save({ ...student, isActive: false });
+  async archive(id: string, user: User): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      const student = await manager.findOne(Student, { where: { id } });
+      if (!student) throw new NotFoundException(`Student ${id} not found`);
+      await manager.save(Student, { ...student, isActive: false });
+      await this.eventService.record(manager, {
+        action: 'student.archived',
+        entity: 'student',
+        entityId: id,
+        userId: user.id,
+        dto: {},
+      });
+    });
   }
 }

@@ -1,7 +1,9 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
 import type { PaginatedReceivables, Receivable as ReceivableContract } from '@anna-maria/contracts';
+import { EventService } from '../../event/event.service';
+import { User } from '../../user/user.entity';
 import { Receivable } from './entities/receivable.entity';
 import { Plan } from '../plans/entities/plan.entity';
 import { Student } from '../students/entities/student.entity';
@@ -39,6 +41,9 @@ export class ReceivablesService {
   constructor(
     @InjectRepository(Receivable)
     private readonly repo: Repository<Receivable>,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
+    private readonly eventService: EventService,
   ) {}
 
   async findAll(query: ListReceivablesQuery): Promise<PaginatedReceivables> {
@@ -111,75 +116,129 @@ export class ReceivablesService {
     return toContract(r);
   }
 
-  async createManual(dto: CreateReceivableDto): Promise<ReceivableContract> {
-    const r = this.repo.create({
-      source: 'manual',
-      planId: null,
-      installmentNumber: null,
-      installmentTotal: null,
-      status: 'pending',
-      description: dto.description,
-      amount: dto.amount,
-      dueDate: dto.dueDate,
-      paymentMethod: dto.paymentMethod ?? null,
+  async createManual(dto: CreateReceivableDto, user: User): Promise<ReceivableContract> {
+    return this.dataSource.transaction(async (manager) => {
+      const r = manager.create(Receivable, {
+        source: 'manual',
+        planId: null,
+        installmentNumber: null,
+        installmentTotal: null,
+        status: 'pending',
+        description: dto.description,
+        amount: dto.amount,
+        dueDate: dto.dueDate,
+        paymentMethod: dto.paymentMethod ?? null,
+      });
+      await manager.save(Receivable, r);
+      await this.eventService.record(manager, {
+        action: 'receivable.created',
+        entity: 'receivable',
+        entityId: r.id,
+        userId: user.id,
+        dto: { description: dto.description, amount: dto.amount, dueDate: dto.dueDate },
+      });
+      return toContract(r);
     });
-    await this.repo.save(r);
-    return toContract(r);
   }
 
-  async update(id: string, dto: UpdateReceivableDto): Promise<ReceivableContract> {
-    const r = await this.repo.findOne({ where: { id } });
-    if (!r) throw new NotFoundException(`Receivable ${id} not found`);
+  async update(id: string, dto: UpdateReceivableDto, user: User): Promise<ReceivableContract> {
+    return this.dataSource.transaction(async (manager) => {
+      const r = await manager.findOne(Receivable, { where: { id } });
+      if (!r) throw new NotFoundException(`Receivable ${id} not found`);
 
-    if (dto.description !== undefined) r.description = dto.description;
-    if (dto.amount !== undefined) r.amount = dto.amount;
-    if (dto.dueDate !== undefined) r.dueDate = dto.dueDate;
-    if (dto.paymentMethod !== undefined) r.paymentMethod = dto.paymentMethod;
+      if (dto.description !== undefined) r.description = dto.description;
+      if (dto.amount !== undefined) r.amount = dto.amount;
+      if (dto.dueDate !== undefined) r.dueDate = dto.dueDate;
+      if (dto.paymentMethod !== undefined) r.paymentMethod = dto.paymentMethod;
 
-    await this.repo.save(r);
-    return toContract(r);
+      await manager.save(Receivable, r);
+      await this.eventService.record(manager, {
+        action: 'receivable.updated',
+        entity: 'receivable',
+        entityId: id,
+        userId: user.id,
+        dto: dto as Record<string, unknown>,
+      });
+      return toContract(r);
+    });
   }
 
-  async pay(id: string, dto: PayReceivableDto): Promise<ReceivableContract> {
-    const r = await this.repo.findOne({ where: { id } });
-    if (!r) throw new NotFoundException(`Receivable ${id} not found`);
-    if (r.status === 'paid') throw new ConflictException('Receivable is already paid');
+  async pay(id: string, dto: PayReceivableDto, user: User): Promise<ReceivableContract> {
+    return this.dataSource.transaction(async (manager) => {
+      const r = await manager.findOne(Receivable, { where: { id } });
+      if (!r) throw new NotFoundException(`Receivable ${id} not found`);
+      if (r.status === 'paid') throw new ConflictException('Receivable is already paid');
 
-    r.status = 'paid';
-    r.paidAt = dto.paidAt;
-    r.paymentMethod = dto.paymentMethod;
-    await this.repo.save(r);
-    return toContract(r);
+      r.status = 'paid';
+      r.paidAt = dto.paidAt;
+      r.paymentMethod = dto.paymentMethod;
+      await manager.save(Receivable, r);
+      await this.eventService.record(manager, {
+        action: 'receivable.paid',
+        entity: 'receivable',
+        entityId: id,
+        userId: user.id,
+        dto: { paidAt: dto.paidAt, paymentMethod: dto.paymentMethod },
+      });
+      return toContract(r);
+    });
   }
 
-  async unpay(id: string): Promise<ReceivableContract> {
-    const r = await this.repo.findOne({ where: { id } });
-    if (!r) throw new NotFoundException(`Receivable ${id} not found`);
-    if (r.status === 'pending') throw new ConflictException('Receivable is already pending');
+  async unpay(id: string, user: User): Promise<ReceivableContract> {
+    return this.dataSource.transaction(async (manager) => {
+      const r = await manager.findOne(Receivable, { where: { id } });
+      if (!r) throw new NotFoundException(`Receivable ${id} not found`);
+      if (r.status === 'pending') throw new ConflictException('Receivable is already pending');
 
-    r.status = 'pending';
-    r.paidAt = null;
-    await this.repo.save(r);
-    return toContract(r);
+      r.status = 'pending';
+      r.paidAt = null;
+      await manager.save(Receivable, r);
+      await this.eventService.record(manager, {
+        action: 'receivable.unpaid',
+        entity: 'receivable',
+        entityId: id,
+        userId: user.id,
+        dto: {},
+      });
+      return toContract(r);
+    });
   }
 
-  async markInvoiced(id: string): Promise<ReceivableContract> {
-    const r = await this.repo.findOne({ where: { id } });
-    if (!r) throw new NotFoundException(`Receivable ${id} not found`);
-    if (r.invoiceGenerated) throw new ConflictException('Invoice already marked as generated');
+  async markInvoiced(id: string, user: User): Promise<ReceivableContract> {
+    return this.dataSource.transaction(async (manager) => {
+      const r = await manager.findOne(Receivable, { where: { id } });
+      if (!r) throw new NotFoundException(`Receivable ${id} not found`);
+      if (r.invoiceGenerated) throw new ConflictException('Invoice already marked as generated');
 
-    r.invoiceGenerated = true;
-    await this.repo.save(r);
-    return toContract(r);
+      r.invoiceGenerated = true;
+      await manager.save(Receivable, r);
+      await this.eventService.record(manager, {
+        action: 'receivable.invoiced',
+        entity: 'receivable',
+        entityId: id,
+        userId: user.id,
+        dto: {},
+      });
+      return toContract(r);
+    });
   }
 
-  async unmarkInvoiced(id: string): Promise<ReceivableContract> {
-    const r = await this.repo.findOne({ where: { id } });
-    if (!r) throw new NotFoundException(`Receivable ${id} not found`);
-    if (!r.invoiceGenerated) throw new ConflictException('Invoice is not marked as generated');
+  async unmarkInvoiced(id: string, user: User): Promise<ReceivableContract> {
+    return this.dataSource.transaction(async (manager) => {
+      const r = await manager.findOne(Receivable, { where: { id } });
+      if (!r) throw new NotFoundException(`Receivable ${id} not found`);
+      if (!r.invoiceGenerated) throw new ConflictException('Invoice is not marked as generated');
 
-    r.invoiceGenerated = false;
-    await this.repo.save(r);
-    return toContract(r);
+      r.invoiceGenerated = false;
+      await manager.save(Receivable, r);
+      await this.eventService.record(manager, {
+        action: 'receivable.uninvoiced',
+        entity: 'receivable',
+        entityId: id,
+        userId: user.id,
+        dto: {},
+      });
+      return toContract(r);
+    });
   }
 }

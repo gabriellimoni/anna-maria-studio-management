@@ -1,6 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { RecurringExpensesController } from '../recurring-expenses.controller';
 import { RecurringExpensesService } from '../recurring-expenses.service';
+import { User } from '../../../user/user.entity';
+
+const mockUser = { id: 'user-uuid-1' } as User;
 
 describe('RecurringExpensesController (unit)', () => {
   let controller: RecurringExpensesController;
@@ -32,11 +35,11 @@ describe('RecurringExpensesController (unit)', () => {
     expect(mockService.findAll).toHaveBeenCalledWith(query);
   });
 
-  it('create delegates dto to service', async () => {
+  it('create delegates dto and user to service', async () => {
     const dto = { description: 'Aluguel', expectedAmount: '2000.00', dueDay: 10 };
     mockService.create.mockResolvedValue({ id: '1', ...dto, isActive: true });
-    await controller.create(dto as never);
-    expect(mockService.create).toHaveBeenCalledWith(dto);
+    await controller.create(dto as never, mockUser);
+    expect(mockService.create).toHaveBeenCalledWith(dto, mockUser);
   });
 
   it('findOne delegates id to service', async () => {
@@ -45,17 +48,17 @@ describe('RecurringExpensesController (unit)', () => {
     expect(mockService.findOne).toHaveBeenCalledWith('1');
   });
 
-  it('update delegates id and dto to service', async () => {
+  it('update delegates id, dto, and user to service', async () => {
     mockService.update.mockResolvedValue({ id: '1' });
     const dto = { description: 'Novo nome' };
-    await controller.update('1', dto as never);
-    expect(mockService.update).toHaveBeenCalledWith('1', dto);
+    await controller.update('1', dto as never, mockUser);
+    expect(mockService.update).toHaveBeenCalledWith('1', dto, mockUser);
   });
 
-  it('remove delegates id to service', async () => {
+  it('remove delegates id and user to service', async () => {
     mockService.remove.mockResolvedValue(undefined);
-    await controller.remove('1');
-    expect(mockService.remove).toHaveBeenCalledWith('1');
+    await controller.remove('1', mockUser);
+    expect(mockService.remove).toHaveBeenCalledWith('1', mockUser);
   });
 
   describe('runGeneration()', () => {

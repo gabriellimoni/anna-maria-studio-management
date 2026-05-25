@@ -1,5 +1,7 @@
 import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { User } from '../../user/user.entity';
 import { PayablesService } from './payables.service';
 import { CreatePayableDto } from './dto/create-payable.dto';
 import { UpdatePayableDto } from './dto/update-payable.dto';
@@ -18,8 +20,8 @@ export class PayablesController {
   }
 
   @Post()
-  createManual(@Body() dto: CreatePayableDto) {
-    return this.service.createManual(dto);
+  createManual(@Body() dto: CreatePayableDto, @CurrentUser() user: User) {
+    return this.service.createManual(dto, user);
   }
 
   @Get(':id')
@@ -28,17 +30,17 @@ export class PayablesController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdatePayableDto) {
-    return this.service.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdatePayableDto, @CurrentUser() user: User) {
+    return this.service.update(id, dto, user);
   }
 
   @Post(':id/pay')
-  pay(@Param('id') id: string, @Body() dto: PayPayableDto) {
-    return this.service.pay(id, dto);
+  pay(@Param('id') id: string, @Body() dto: PayPayableDto, @CurrentUser() user: User) {
+    return this.service.pay(id, dto, user);
   }
 
   @Post(':id/unpay')
-  unpay(@Param('id') id: string) {
-    return this.service.unpay(id);
+  unpay(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.service.unpay(id, user);
   }
 }

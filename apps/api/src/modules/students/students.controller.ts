@@ -11,6 +11,8 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { User } from '../../user/user.entity';
 import { StudentsService } from './students.service';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
@@ -24,8 +26,8 @@ export class StudentsController {
 
   @Post()
   @ApiResponse({ status: 201 })
-  create(@Body() dto: CreateStudentDto) {
-    return this.service.create(dto);
+  create(@Body() dto: CreateStudentDto, @CurrentUser() user: User) {
+    return this.service.create(dto, user);
   }
 
   @Get()
@@ -39,14 +41,14 @@ export class StudentsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateStudentDto) {
-    return this.service.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateStudentDto, @CurrentUser() user: User) {
+    return this.service.update(id, dto, user);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  archive(@Param('id') id: string) {
-    return this.service.archive(id);
+  archive(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.service.archive(id, user);
   }
 
   @Get(':id/plans')

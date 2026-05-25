@@ -1,9 +1,16 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
+import { EntityManager } from 'typeorm';
 import { PayableGeneratorService } from '../../scheduling/services/payable-generator.service';
 import { RecurringExpense } from '../entities/recurring-expense.entity';
 import { RecurringExpensesService } from '../recurring-expenses.service';
+import { EventService } from '../../../event/event.service';
+import { User } from '../../../user/user.entity';
+
+type AnyFn = (...args: unknown[]) => unknown;
+
+const mockUser = { id: 'user-uuid-1' } as User;
 
 function makeRule(overrides: Partial<RecurringExpense> = {}): RecurringExpense {
   return {
@@ -19,6 +26,16 @@ function makeRule(overrides: Partial<RecurringExpense> = {}): RecurringExpense {
   };
 }
 
+function makeManager(overrides: Record<string, AnyFn> = {}): EntityManager {
+  return {
+    create: jest.fn((_cls, dto) => ({ ...dto })),
+    save: jest.fn(async (_cls, entity) => ({ id: 'rule-1', createdAt: new Date(), updatedAt: new Date(), ...entity })),
+    findOne: jest.fn(),
+    delete: jest.fn(),
+    ...overrides,
+  } as unknown as EntityManager;
+}
+
 describe('RecurringExpensesService (unit)', () => {
   let service: RecurringExpensesService;
 
@@ -31,6 +48,8 @@ describe('RecurringExpensesService (unit)', () => {
     delete: jest.fn(),
   };
 
+  let mockManager: EntityManager;
+
   const mockDataSource = {
     transaction: jest.fn(),
   };
@@ -39,8 +58,12 @@ describe('RecurringExpensesService (unit)', () => {
     generateForMonth: jest.fn(),
   };
 
+  const mockEventService = { record: jest.fn() };
+
   beforeEach(async () => {
     jest.clearAllMocks();
+    mockManager = makeManager();
+    mockDataSource.transaction.mockImplementation(async (cb: (m: EntityManager) => Promise<unknown>) => cb(mockManager));
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -48,6 +71,7 @@ describe('RecurringExpensesService (unit)', () => {
         { provide: getRepositoryToken(RecurringExpense), useValue: mockRepo },
         { provide: getDataSourceToken(), useValue: mockDataSource },
         { provide: PayableGeneratorService, useValue: mockGenerator },
+        { provide: EventService, useValue: mockEventService },
       ],
     }).compile();
 
@@ -57,14 +81,27 @@ describe('RecurringExpensesService (unit)', () => {
   describe('create()', () => {
     it('creates rule with isActive=true and returns contract', async () => {
       const rule = makeRule();
-      mockRepo.create.mockReturnValue(rule);
-      mockRepo.save.mockResolvedValue(rule);
+      (mockManager.create as jest.Mock).mockReturnValue(rule);
+      (mockManager.save as jest.Mock).mockResolvedValue(rule);
 
-      const result = await service.create({ description: 'Aluguel', expectedAmount: '2500.00', dueDay: 10 });
+      const result = await service.create({ description: 'Aluguel', expectedAmount: '2500.00', dueDay: 10 }, mockUser);
 
-      expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({ isActive: true }));
+      expect(mockManager.create).toHaveBeenCalledWith(RecurringExpense, expect.objectContaining({ isActive: true }));
       expect(result.id).toBe('rule-1');
       expect(result.isActive).toBe(true);
+    });
+
+    it('records a recurring_expense.created event', async () => {
+      const rule = makeRule();
+      (mockManager.create as jest.Mock).mockReturnValue(rule);
+      (mockManager.save as jest.Mock).mockResolvedValue(rule);
+
+      await service.create({ description: 'Aluguel', expectedAmount: '2500.00', dueDay: 10 }, mockUser);
+
+      expect(mockEventService.record).toHaveBeenCalledWith(
+        mockManager,
+        expect.objectContaining({ action: 'recurring_expense.created', entity: 'recurring_expense', userId: mockUser.id }),
+      );
     });
   });
 
@@ -84,45 +121,56 @@ describe('RecurringExpensesService (unit)', () => {
   describe('update()', () => {
     it('updates only provided fields', async () => {
       const rule = makeRule();
-      mockRepo.findOne.mockResolvedValue(rule);
-      mockRepo.save.mockResolvedValue({ ...rule, description: 'Updated' });
+      (mockManager.findOne as jest.Mock).mockResolvedValue(rule);
+      (mockManager.save as jest.Mock).mockResolvedValue({ ...rule, description: 'Updated' });
 
-      await service.update('rule-1', { description: 'Updated' });
+      await service.update('rule-1', { description: 'Updated' }, mockUser);
 
-      expect(mockRepo.save).toHaveBeenCalledWith(expect.objectContaining({ description: 'Updated' }));
-      // dueDay unchanged
-      expect(mockRepo.save).toHaveBeenCalledWith(expect.objectContaining({ dueDay: 10 }));
+      expect(mockManager.save).toHaveBeenCalledWith(RecurringExpense, expect.objectContaining({ description: 'Updated' }));
+      expect(mockManager.save).toHaveBeenCalledWith(RecurringExpense, expect.objectContaining({ dueDay: 10 }));
     });
 
     it('throws NotFoundException when not found', async () => {
-      mockRepo.findOne.mockResolvedValue(null);
-      await expect(service.update('missing', { description: 'x' })).rejects.toThrow(NotFoundException);
+      (mockManager.findOne as jest.Mock).mockResolvedValue(null);
+      await expect(service.update('missing', { description: 'x' }, mockUser)).rejects.toThrow(NotFoundException);
     });
 
     it('can set isActive=false', async () => {
       const rule = makeRule();
-      mockRepo.findOne.mockResolvedValue(rule);
-      mockRepo.save.mockResolvedValue({ ...rule, isActive: false });
+      (mockManager.findOne as jest.Mock).mockResolvedValue(rule);
+      (mockManager.save as jest.Mock).mockResolvedValue({ ...rule, isActive: false });
 
-      await service.update('rule-1', { isActive: false });
+      await service.update('rule-1', { isActive: false }, mockUser);
 
-      expect(mockRepo.save).toHaveBeenCalledWith(expect.objectContaining({ isActive: false }));
+      expect(mockManager.save).toHaveBeenCalledWith(RecurringExpense, expect.objectContaining({ isActive: false }));
     });
   });
 
   describe('remove()', () => {
     it('deletes the rule', async () => {
-      mockRepo.findOne.mockResolvedValue(makeRule());
-      mockRepo.delete.mockResolvedValue({ affected: 1 });
+      (mockManager.findOne as jest.Mock).mockResolvedValue(makeRule());
+      (mockManager.delete as jest.Mock).mockResolvedValue({ affected: 1 });
 
-      await service.remove('rule-1');
+      await service.remove('rule-1', mockUser);
 
-      expect(mockRepo.delete).toHaveBeenCalledWith('rule-1');
+      expect(mockManager.delete).toHaveBeenCalledWith(RecurringExpense, { id: 'rule-1' });
     });
 
     it('throws NotFoundException when not found', async () => {
-      mockRepo.findOne.mockResolvedValue(null);
-      await expect(service.remove('missing')).rejects.toThrow(NotFoundException);
+      (mockManager.findOne as jest.Mock).mockResolvedValue(null);
+      await expect(service.remove('missing', mockUser)).rejects.toThrow(NotFoundException);
+    });
+
+    it('records a recurring_expense.deleted event', async () => {
+      (mockManager.findOne as jest.Mock).mockResolvedValue(makeRule());
+      (mockManager.delete as jest.Mock).mockResolvedValue({ affected: 1 });
+
+      await service.remove('rule-1', mockUser);
+
+      expect(mockEventService.record).toHaveBeenCalledWith(
+        mockManager,
+        expect.objectContaining({ action: 'recurring_expense.deleted', entity: 'recurring_expense', userId: mockUser.id }),
+      );
     });
   });
 
@@ -130,7 +178,6 @@ describe('RecurringExpensesService (unit)', () => {
     const competence = new Date('2026-07-01T00:00:00Z');
 
     beforeEach(() => {
-      // Simulate dataSource.transaction calling the callback with a mock manager
       mockDataSource.transaction.mockImplementation(async (cb: (m: unknown) => Promise<void>) => {
         await cb({});
       });
@@ -160,7 +207,6 @@ describe('RecurringExpensesService (unit)', () => {
     it('collects errors without stopping other rules', async () => {
       mockRepo.find.mockResolvedValue([makeRule({ id: 'r1' }), makeRule({ id: 'r2', description: 'Energia' })]);
 
-      // First rule's transaction fails
       mockDataSource.transaction
         .mockImplementationOnce(() => Promise.reject(new Error('DB error')))
         .mockImplementationOnce(async (cb: (m: unknown) => Promise<void>) => {
@@ -168,7 +214,6 @@ describe('RecurringExpensesService (unit)', () => {
           mockGenerator.generateForMonth.mockResolvedValueOnce({ created: true });
         });
 
-      // Second transaction calls generator which returns created:true
       mockGenerator.generateForMonth.mockResolvedValue({ created: true });
 
       const result = await service.runForMonth(competence);

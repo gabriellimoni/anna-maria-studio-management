@@ -1,5 +1,7 @@
 import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { User } from '../../user/user.entity';
 import { ReceivablesService } from './receivables.service';
 import { CreateReceivableDto } from './dto/create-receivable.dto';
 import { UpdateReceivableDto } from './dto/update-receivable.dto';
@@ -18,8 +20,8 @@ export class ReceivablesController {
   }
 
   @Post()
-  createManual(@Body() dto: CreateReceivableDto) {
-    return this.service.createManual(dto);
+  createManual(@Body() dto: CreateReceivableDto, @CurrentUser() user: User) {
+    return this.service.createManual(dto, user);
   }
 
   @Get(':id')
@@ -28,27 +30,27 @@ export class ReceivablesController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateReceivableDto) {
-    return this.service.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateReceivableDto, @CurrentUser() user: User) {
+    return this.service.update(id, dto, user);
   }
 
   @Post(':id/pay')
-  pay(@Param('id') id: string, @Body() dto: PayReceivableDto) {
-    return this.service.pay(id, dto);
+  pay(@Param('id') id: string, @Body() dto: PayReceivableDto, @CurrentUser() user: User) {
+    return this.service.pay(id, dto, user);
   }
 
   @Post(':id/unpay')
-  unpay(@Param('id') id: string) {
-    return this.service.unpay(id);
+  unpay(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.service.unpay(id, user);
   }
 
   @Post(':id/mark-invoiced')
-  markInvoiced(@Param('id') id: string) {
-    return this.service.markInvoiced(id);
+  markInvoiced(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.service.markInvoiced(id, user);
   }
 
   @Post(':id/unmark-invoiced')
-  unmarkInvoiced(@Param('id') id: string) {
-    return this.service.unmarkInvoiced(id);
+  unmarkInvoiced(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.service.unmarkInvoiced(id, user);
   }
 }

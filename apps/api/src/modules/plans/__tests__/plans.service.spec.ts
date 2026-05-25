@@ -11,6 +11,11 @@ import { PlanCatalog } from '../../plan-catalog/entities/plan-catalog.entity';
 import { Session } from '../../sessions/entities/session.entity';
 import { migrations } from '../../../database/data-source';
 import { CreatePlanDto } from '../dto/create-plan.dto';
+import { EventService } from '../../../event/event.service';
+import { User } from '../../../user/user.entity';
+
+const mockUser = { id: 'user-uuid-1' } as User;
+const mockEventService = { record: jest.fn() } as unknown as EventService;
 
 async function buildDataSource(container: StartedPostgreSqlContainer): Promise<DataSource> {
   const ds = new DataSource({
@@ -50,7 +55,7 @@ describe('PlansService (integration)', () => {
     const sessionGenerator = new SessionGeneratorService();
     const receivablePersist = new ReceivablePersistService();
     const capacityChecker = new CapacityCheckerService();
-    service = new PlansService(ds, sessionGenerator, receivablePersist, capacityChecker);
+    service = new PlansService(ds, sessionGenerator, receivablePersist, capacityChecker, mockEventService);
   });
 
   afterAll(async () => {
@@ -75,6 +80,7 @@ describe('PlansService (integration)', () => {
   });
 
   afterEach(async () => {
+    await ds.query('DELETE FROM domain_events');
     await ds.query('DELETE FROM receivable');
     await ds.query('DELETE FROM session');
     await ds.query('DELETE FROM plan_schedule');
@@ -94,7 +100,7 @@ describe('PlansService (integration)', () => {
         installments: INSTALLMENTS_3,
       };
 
-      const result = await service.create(dto);
+      const result = await service.create(dto, mockUser);
 
       expect((result as any).id).toBeDefined();
       expect((result as any).generated.sessions).toBeGreaterThanOrEqual(24);
@@ -143,7 +149,7 @@ describe('PlansService (integration)', () => {
         installments: INSTALLMENTS_3,
       };
 
-      const result = await service.create(dto);
+      const result = await service.create(dto, mockUser);
 
       expect((result as any).id).toBeDefined();
       expect((result as any).warnings?.overCapacitySlots).toBeDefined();
@@ -164,7 +170,7 @@ describe('PlansService (integration)', () => {
         installments: INSTALLMENTS_3,
       };
 
-      await expect(service.create(dto)).rejects.toThrow('Aluno arquivado');
+      await expect(service.create(dto, mockUser)).rejects.toThrow('Aluno arquivado');
     });
 
     it('throws 422 when schedules.length mismatches weeklyFrequency', async () => {
@@ -177,7 +183,7 @@ describe('PlansService (integration)', () => {
         installments: INSTALLMENTS_3,
       };
 
-      await expect(service.create(dto)).rejects.toThrow('Expected 2 schedules');
+      await expect(service.create(dto, mockUser)).rejects.toThrow('Expected 2 schedules');
     });
 
     it('throws 422 when installment sum mismatches totalPrice', async () => {
@@ -194,7 +200,7 @@ describe('PlansService (integration)', () => {
         ],
       };
 
-      await expect(service.create(dto)).rejects.toThrow(/sum|match/i);
+      await expect(service.create(dto, mockUser)).rejects.toThrow(/sum|match/i);
     });
 
     it('computes endDate correctly (startDate + durationMonths - 1 day)', async () => {
@@ -207,7 +213,7 @@ describe('PlansService (integration)', () => {
         installments: INSTALLMENTS_3,
       };
 
-      const result = await service.create(dto);
+      const result = await service.create(dto, mockUser);
       expect((result as any).endDate).toBe('2026-08-31');
     });
   });
@@ -222,7 +228,7 @@ describe('PlansService (integration)', () => {
         schedules: SCHEDULES_2X,
         installments: INSTALLMENTS_3,
       };
-      const created = await service.create(createDto);
+      const created = await service.create(createDto, mockUser);
       const planId = (created as any).id;
 
       // Manually mark a past session as present
@@ -239,7 +245,7 @@ describe('PlansService (integration)', () => {
           { weekday: 3, startTime: '09:00' },
           { weekday: 5, startTime: '10:00' },
         ],
-      });
+      }, mockUser);
 
       // Past session preserved
       if (pastSession) {
@@ -268,13 +274,13 @@ describe('PlansService (integration)', () => {
         schedules: SCHEDULES_2X,
         installments: INSTALLMENTS_3,
       };
-      const created = await service.create(createDto);
+      const created = await service.create(createDto, mockUser);
       const planId = (created as any).id;
 
-      await service.cancel(planId, { cancelFutureSessions: false });
+      await service.cancel(planId, { cancelFutureSessions: false }, mockUser);
 
       await expect(
-        service.changeSchedule(planId, { schedules: SCHEDULES_2X }),
+        service.changeSchedule(planId, { schedules: SCHEDULES_2X }, mockUser),
       ).rejects.toThrow();
     });
   });
@@ -289,7 +295,7 @@ describe('PlansService (integration)', () => {
         schedules: SCHEDULES_2X,
         installments: INSTALLMENTS_3,
       };
-      const created = await service.create(createDto);
+      const created = await service.create(createDto, mockUser);
       const planId = (created as any).id;
 
       const [pastSession] = await ds.query(
@@ -300,7 +306,7 @@ describe('PlansService (integration)', () => {
         await ds.query(`UPDATE session SET status = 'present' WHERE id = $1`, [pastSession.id]);
       }
 
-      const result = await service.cancel(planId, { cancelFutureSessions: true, reason: 'test reason' });
+      const result = await service.cancel(planId, { cancelFutureSessions: true, reason: 'test reason' }, mockUser);
 
       expect(result.cancelledFutureSessions).toBeGreaterThan(0);
       expect(result.pendingReceivables.length).toBeGreaterThan(0);
@@ -329,10 +335,10 @@ describe('PlansService (integration)', () => {
         schedules: SCHEDULES_2X,
         installments: INSTALLMENTS_3,
       };
-      const created = await service.create(createDto);
+      const created = await service.create(createDto, mockUser);
       const planId = (created as any).id;
 
-      await service.cancel(planId, { cancelFutureSessions: false });
+      await service.cancel(planId, { cancelFutureSessions: false }, mockUser);
 
       const [{ count: futureScheduled }] = await ds.query(
         `SELECT count(*) FROM session WHERE plan_id = $1 AND scheduled_at >= now() AND status = 'scheduled'`,
@@ -352,7 +358,7 @@ describe('PlansService (integration)', () => {
         schedules: SCHEDULES_2X,
         installments: INSTALLMENTS_3,
       };
-      const original = await service.create(createDto);
+      const original = await service.create(createDto, mockUser);
       const originalId = (original as any).id;
 
       const renewed = await service.renew(originalId, {
@@ -364,7 +370,7 @@ describe('PlansService (integration)', () => {
           { amount: '150.00', dueDate: '2026-10-10' },
           { amount: '150.00', dueDate: '2026-11-10' },
         ],
-      });
+      }, mockUser);
 
       expect(renewed.newPlanId).not.toBe(originalId);
       expect(renewed.generated.sessions).toBeGreaterThan(0);
@@ -457,10 +463,10 @@ describe('PlansService (integration)', () => {
         schedules: SCHEDULES_2X,
         installments: INSTALLMENTS_3,
       };
-      const created = await service.create(dto);
+      const created = await service.create(dto, mockUser);
       const planId = (created as any).id;
 
-      const result = await service.finish(planId);
+      const result = await service.finish(planId, mockUser);
       expect(result.status).toBe('finished');
 
       const [row] = await ds.query(`SELECT status FROM plan WHERE id = $1`, [planId]);
@@ -468,7 +474,7 @@ describe('PlansService (integration)', () => {
     });
 
     it('throws NotFoundException for unknown plan', async () => {
-      await expect(service.finish('00000000-0000-0000-0000-000000000000')).rejects.toThrow('not found');
+      await expect(service.finish('00000000-0000-0000-0000-000000000000', mockUser)).rejects.toThrow('not found');
     });
 
     it('throws BadRequestException when already finished', async () => {
@@ -480,11 +486,11 @@ describe('PlansService (integration)', () => {
         schedules: SCHEDULES_2X,
         installments: INSTALLMENTS_3,
       };
-      const created = await service.create(dto);
+      const created = await service.create(dto, mockUser);
       const planId = (created as any).id;
-      await service.finish(planId);
+      await service.finish(planId, mockUser);
 
-      await expect(service.finish(planId)).rejects.toThrow('already finished');
+      await expect(service.finish(planId, mockUser)).rejects.toThrow('already finished');
     });
 
     it('throws BadRequestException when plan is cancelled', async () => {
@@ -496,11 +502,11 @@ describe('PlansService (integration)', () => {
         schedules: SCHEDULES_2X,
         installments: INSTALLMENTS_3,
       };
-      const created = await service.create(dto);
+      const created = await service.create(dto, mockUser);
       const planId = (created as any).id;
-      await service.cancel(planId, { cancelFutureSessions: false });
+      await service.cancel(planId, { cancelFutureSessions: false }, mockUser);
 
-      await expect(service.finish(planId)).rejects.toThrow('already cancelled');
+      await expect(service.finish(planId, mockUser)).rejects.toThrow('already cancelled');
     });
   });
 
@@ -514,7 +520,7 @@ describe('PlansService (integration)', () => {
         schedules: SCHEDULES_2X,
         installments: INSTALLMENTS_3,
       };
-      const first = await service.create(firstDto);
+      const first = await service.create(firstDto, mockUser);
       const firstId = (first as any).id;
 
       const secondDto: CreatePlanDto = {
@@ -529,7 +535,7 @@ describe('PlansService (integration)', () => {
           { amount: '150.00', dueDate: '2026-11-10' },
         ],
       };
-      const second = await service.create(secondDto);
+      const second = await service.create(secondDto, mockUser);
       expect((second as any).status).toBe('active');
 
       const [firstRow] = await ds.query(`SELECT status FROM plan WHERE id = $1`, [firstId]);

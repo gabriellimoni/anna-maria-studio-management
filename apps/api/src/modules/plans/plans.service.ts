@@ -3,6 +3,8 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { addDays, addMonths, format, parseISO, subDays } from 'date-fns';
 import { DataSource, MoreThanOrEqual } from 'typeorm';
 import { PaymentMethod } from '@anna-maria/contracts';
+import { EventService } from '../../event/event.service';
+import { User } from '../../user/user.entity';
 import { CapacityCheckerService } from '../scheduling/services/capacity-checker.service';
 import { ReceivablePersistService } from '../scheduling/services/receivable-persist.service';
 import { SessionGeneratorService } from '../scheduling/services/session-generator.service';
@@ -27,9 +29,10 @@ export class PlansService {
     private readonly sessionGenerator: SessionGeneratorService,
     private readonly receivablePersist: ReceivablePersistService,
     private readonly capacityChecker: CapacityCheckerService,
+    private readonly eventService: EventService,
   ) {}
 
-  async create(dto: CreatePlanDto) {
+  async create(dto: CreatePlanDto, user: User) {
     return this.dataSource.transaction(async (manager) => {
       const student = await manager.findOne(Student, { where: { id: dto.studentId } });
       if (!student) throw new NotFoundException(`Student ${dto.studentId} not found`);
@@ -97,6 +100,14 @@ export class PlansService {
         manager,
         studentName: student.fullName,
         planName: catalog.name,
+      });
+
+      await this.eventService.record(manager, {
+        action: 'plan.created',
+        entity: 'plan',
+        entityId: plan.id,
+        userId: user.id,
+        dto: { studentId: dto.studentId, planCatalogId: dto.planCatalogId, startDate: dto.startDate },
       });
 
       const response: Record<string, unknown> = {
@@ -181,18 +192,29 @@ export class PlansService {
     };
   }
 
-  async updateBasics(id: string, dto: UpdatePlanDto) {
-    const plan = await this.dataSource.getRepository(Plan).findOne({ where: { id } });
-    if (!plan) throw new NotFoundException(`Plan ${id} not found`);
+  async updateBasics(id: string, dto: UpdatePlanDto, user: User) {
+    return this.dataSource.transaction(async (manager) => {
+      const plan = await manager.findOne(Plan, { where: { id } });
+      if (!plan) throw new NotFoundException(`Plan ${id} not found`);
 
-    if (dto.notes !== undefined) plan.notes = dto.notes;
-    if (dto.status !== undefined) plan.status = dto.status;
+      if (dto.notes !== undefined) plan.notes = dto.notes;
+      if (dto.status !== undefined) plan.status = dto.status;
 
-    const saved = await this.dataSource.getRepository(Plan).save(plan);
-    return planToResponse(saved);
+      const saved = await manager.save(Plan, plan);
+
+      await this.eventService.record(manager, {
+        action: 'plan.updated',
+        entity: 'plan',
+        entityId: id,
+        userId: user.id,
+        dto: dto as Record<string, unknown>,
+      });
+
+      return planToResponse(saved);
+    });
   }
 
-  async changeSchedule(id: string, dto: ChangeScheduleDto) {
+  async changeSchedule(id: string, dto: ChangeScheduleDto, user: User) {
     return this.dataSource.transaction(async (manager) => {
       const plan = await manager.findOne(Plan, { where: { id } });
       if (!plan) throw new NotFoundException(`Plan ${id} not found`);
@@ -229,6 +251,14 @@ export class PlansService {
         ignoreSessionIds: futureSessions.map((s) => s.id),
       });
 
+      await this.eventService.record(manager, {
+        action: 'plan.schedule_changed',
+        entity: 'plan',
+        entityId: id,
+        userId: user.id,
+        dto: { schedules: dto.schedules },
+      });
+
       const response: Record<string, unknown> = {
         removedFutureSessions: result.removed,
         createdSessions: result.created,
@@ -244,7 +274,7 @@ export class PlansService {
     });
   }
 
-  async renew(id: string, dto: RenewPlanDto) {
+  async renew(id: string, dto: RenewPlanDto, user: User) {
     const currentPlan = await this.dataSource.getRepository(Plan).findOne({ where: { id } });
     if (!currentPlan) throw new NotFoundException(`Plan ${id} not found`);
 
@@ -268,11 +298,11 @@ export class PlansService {
       notes: dto.notes,
     };
 
-    const result = await this.create(createDto);
+    const result = await this.create(createDto, user);
     return { newPlanId: (result as any).id, generated: (result as any).generated, warnings: (result as any).warnings };
   }
 
-  async cancel(id: string, dto: CancelPlanDto) {
+  async cancel(id: string, dto: CancelPlanDto, user: User) {
     return this.dataSource.transaction(async (manager) => {
       const plan = await manager.findOne(Plan, { where: { id } });
       if (!plan) throw new NotFoundException(`Plan ${id} not found`);
@@ -301,11 +331,19 @@ export class PlansService {
         where: { planId: id, status: 'pending' },
       });
 
+      await this.eventService.record(manager, {
+        action: 'plan.cancelled',
+        entity: 'plan',
+        entityId: id,
+        userId: user.id,
+        dto: { reason: dto.reason ?? null, cancelFutureSessions: dto.cancelFutureSessions },
+      });
+
       return { cancelledFutureSessions, pendingReceivables };
     });
   }
 
-  async finish(id: string) {
+  async finish(id: string, user: User) {
     return this.dataSource.transaction(async (manager) => {
       const plan = await manager.findOne(Plan, { where: { id } });
       if (!plan) throw new NotFoundException(`Plan ${id} not found`);
@@ -315,6 +353,14 @@ export class PlansService {
 
       plan.status = 'finished';
       await manager.save(plan);
+
+      await this.eventService.record(manager, {
+        action: 'plan.finished',
+        entity: 'plan',
+        entityId: id,
+        userId: user.id,
+        dto: {},
+      });
 
       return planToResponse(plan);
     });

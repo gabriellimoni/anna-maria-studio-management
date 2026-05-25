@@ -11,6 +11,8 @@ import type {
   SessionOrigin,
   SessionStatus,
 } from '@anna-maria/contracts';
+import { EventService } from '../../event/event.service';
+import { User } from '../../user/user.entity';
 import { Student } from '../students/entities/student.entity';
 import { parseDateBR } from '../scheduling/utils/date.utils';
 import { Session } from './entities/session.entity';
@@ -51,7 +53,10 @@ function mapRaw(row: RawSession): SessionContract {
 
 @Injectable()
 export class SessionsService {
-  constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
+  constructor(
+    @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly eventService: EventService,
+  ) {}
 
   private buildBaseQuery(opts: {
     from?: Date;
@@ -152,19 +157,30 @@ export class SessionsService {
     return mapRaw(rows[0]);
   }
 
-  async updateSession(id: string, dto: UpdateSessionDto): Promise<SessionContract> {
-    const session = await this.dataSource.getRepository(Session).findOneBy({ id });
-    if (!session) throw new NotFoundException(`Session ${id} not found`);
+  async updateSession(id: string, dto: UpdateSessionDto, user: User): Promise<SessionContract> {
+    return this.dataSource.transaction(async (manager) => {
+      const session = await manager.findOne(Session, { where: { id } });
+      if (!session) throw new NotFoundException(`Session ${id} not found`);
 
-    if ((dto as { status?: string }).status === 'cancelled') {
-      throw new UnprocessableEntityException('Use POST /sessions/:id/cancel to cancel a session');
-    }
+      if ((dto as { status?: string }).status === 'cancelled') {
+        throw new UnprocessableEntityException('Use POST /sessions/:id/cancel to cancel a session');
+      }
 
-    if (dto.status !== undefined) session.status = dto.status as SessionStatus;
-    if (dto.notes !== undefined) session.notes = dto.notes;
+      if (dto.status !== undefined) session.status = dto.status as SessionStatus;
+      if (dto.notes !== undefined) session.notes = dto.notes;
 
-    await this.dataSource.getRepository(Session).save(session);
-    return this.findOne(id);
+      await manager.save(Session, session);
+
+      await this.eventService.record(manager, {
+        action: 'session.updated',
+        entity: 'session',
+        entityId: id,
+        userId: user.id,
+        dto: dto as Record<string, unknown>,
+      });
+
+      return this.findOne(id);
+    });
   }
 
   async closeOpenPastSessions(cutoff: Date): Promise<{ updated: number }> {
@@ -179,21 +195,32 @@ export class SessionsService {
     return { updated: result.affected ?? 0 };
   }
 
-  async cancelSession(id: string, dto: CancelSessionDto): Promise<SessionContract> {
-    const session = await this.dataSource.getRepository(Session).findOneBy({ id });
-    if (!session) throw new NotFoundException(`Session ${id} not found`);
-    if (session.status === 'cancelled') {
-      throw new UnprocessableEntityException('Already cancelled');
-    }
+  async cancelSession(id: string, dto: CancelSessionDto, user: User): Promise<SessionContract> {
+    return this.dataSource.transaction(async (manager) => {
+      const session = await manager.findOne(Session, { where: { id } });
+      if (!session) throw new NotFoundException(`Session ${id} not found`);
+      if (session.status === 'cancelled') {
+        throw new UnprocessableEntityException('Already cancelled');
+      }
 
-    session.status = 'cancelled';
-    if (dto.reason) {
-      session.notes = session.notes
-        ? `${session.notes}\n[Cancelamento] ${dto.reason}`
-        : `[Cancelamento] ${dto.reason}`;
-    }
+      session.status = 'cancelled';
+      if (dto.reason) {
+        session.notes = session.notes
+          ? `${session.notes}\n[Cancelamento] ${dto.reason}`
+          : `[Cancelamento] ${dto.reason}`;
+      }
 
-    await this.dataSource.getRepository(Session).save(session);
-    return this.findOne(id);
+      await manager.save(Session, session);
+
+      await this.eventService.record(manager, {
+        action: 'session.cancelled',
+        entity: 'session',
+        entityId: id,
+        userId: user.id,
+        dto: { reason: dto.reason ?? null },
+      });
+
+      return this.findOne(id);
+    });
   }
 }

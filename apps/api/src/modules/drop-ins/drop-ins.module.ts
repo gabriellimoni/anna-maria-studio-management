@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { EventModule } from '../../event/event.module';
 import { Student } from '../students/entities/student.entity';
 import { Session } from '../sessions/entities/session.entity';
 import { Receivable } from '../receivables/entities/receivable.entity';
@@ -12,6 +13,7 @@ import { DropInsService } from './drop-ins.service';
   imports: [
     TypeOrmModule.forFeature([DropInClass, Session, Student, Receivable]),
     SchedulingModule,
+    EventModule,
   ],
   controllers: [DropInsController],
   providers: [DropInsService],
