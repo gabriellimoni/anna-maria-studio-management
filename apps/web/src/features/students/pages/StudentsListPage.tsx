@@ -13,6 +13,7 @@ import {
 import { Add, Search } from '@mui/icons-material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDebounce } from '../../../lib/useDebounce';
 import { useStudents } from '../hooks/useStudents';
 import { useArchiveStudent } from '../hooks/useStudentMutations';
 import { StudentsTable } from '../components/StudentsTable';
@@ -23,12 +24,13 @@ export function StudentsListPage() {
   const navigate = useNavigate();
   const showToast = useToast();
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
   const [activeFilter, setActiveFilter] = useState<'true' | 'false' | undefined>('true');
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
 
   const { data, isLoading } = useStudents({
-    search: search || undefined,
+    search: debouncedSearch || undefined,
     isActive: activeFilter !== undefined ? activeFilter === 'true' : undefined,
     page: page + 1,
     pageSize,
@@ -58,7 +60,7 @@ export function StudentsListPage() {
           size="small"
           placeholder="Buscar por nome…"
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+          onChange={(e) => setSearch(e.target.value)}
           slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search fontSize="small" /></InputAdornment> } }}
           sx={{ width: 280 }}
         />

@@ -43,31 +43,33 @@ export function ScheduleSlotPicker({ index, weekday, startTime, from, to, onChan
   const isOverCapacity = weekday !== '' && startTime && maxOccupied !== null && maxOccupied >= 4;
 
   return (
-    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
       <Typography sx={{ minWidth: 24, color: 'text.secondary' }}>{index + 1}.</Typography>
 
-      <FormControl size="small" sx={{ minWidth: 140 }}>
-        <InputLabel>Dia</InputLabel>
-        <Select
-          label="Dia"
-          value={weekday}
-          onChange={(e) => onChange(e.target.value as number, startTime)}
-        >
-          {WEEKDAYS.map((d) => (
-            <MenuItem key={d.value} value={d.value}>{d.label}</MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexShrink: 0 }}>
+        <FormControl size="small" sx={{ minWidth: 130 }}>
+          <InputLabel>Dia</InputLabel>
+          <Select
+            label="Dia"
+            value={weekday}
+            onChange={(e) => onChange(e.target.value as number, startTime)}
+          >
+            {WEEKDAYS.map((d) => (
+              <MenuItem key={d.value} value={d.value}>{d.label}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
-      <TextField
-        size="small"
-        label="Horário"
-        type="time"
-        value={startTime}
-        onChange={(e) => onChange(weekday, e.target.value)}
-        slotProps={{ inputLabel: { shrink: true } }}
-        sx={{ width: 130 }}
-      />
+        <TextField
+          size="small"
+          label="Horário"
+          type="time"
+          value={startTime}
+          onChange={(e) => onChange(weekday, e.target.value)}
+          slotProps={{ inputLabel: { shrink: true } }}
+          sx={{ width: 120 }}
+        />
+      </Box>
 
       {isOverCapacity && (
         <Chip
@@ -78,4 +80,5 @@ export function ScheduleSlotPicker({ index, weekday, startTime, from, to, onChan
       )}
     </Box>
   );
+
 }

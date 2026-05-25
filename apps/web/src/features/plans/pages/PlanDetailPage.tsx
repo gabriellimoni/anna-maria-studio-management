@@ -198,7 +198,7 @@ export function PlanDetailPage() {
             <Typography variant="caption" color="text.secondary">Horários</Typography>
             {plan.schedules.map((s) => (
               <Typography key={s.id}>
-                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][s.weekday]} — {s.startTime}
+                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][s.weekday]} — {s.startTime.slice(0, 5)}
               </Typography>
             ))}
           </Box>

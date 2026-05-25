@@ -13,6 +13,13 @@ interface ScheduleSlot {
   startTime: string;
 }
 
+const PERIOD_LABELS: Record<string, string> = {
+  monthly: 'Mensal',
+  quarterly: 'Trimestral',
+  semiannual: 'Semestral',
+  annual: 'Anual',
+};
+
 function ChangeScheduleForm({ plan }: { plan: PlanDetail }) {
   const navigate = useNavigate();
   const showToast = useToast();
@@ -43,7 +50,7 @@ function ChangeScheduleForm({ plan }: { plan: PlanDetail }) {
   return (
     <Paper variant="outlined" sx={{ p: 3 }}>
       <Typography sx={{ mb: 2, color: 'text.secondary' }}>
-        {plan.weeklyFrequency}x/semana · {plan.period}
+        {plan.weeklyFrequency}x/semana · {PERIOD_LABELS[plan.period] ?? plan.period}
       </Typography>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {schedules.map((slot, i) => (

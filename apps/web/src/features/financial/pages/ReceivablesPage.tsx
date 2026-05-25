@@ -20,6 +20,16 @@ export function ReceivablesPage() {
   const [to, setTo] = useState('');
   const [invoiceFilter, setInvoiceFilter] = useState<InvoiceFilter>('all');
 
+  const hasActiveFilters = status !== 'pending' || from !== '' || to !== '' || invoiceFilter !== 'all';
+
+  function clearFilters() {
+    setStatus('pending');
+    setFrom('');
+    setTo('');
+    setInvoiceFilter('all');
+    setPage(0);
+  }
+
   const [payTarget, setPayTarget] = useState<Receivable | null>(null);
   const [unpayTarget, setUnpayTarget] = useState<Receivable | null>(null);
   const [page, setPage] = useState(0);
@@ -109,6 +119,14 @@ export function ReceivablesPage() {
         invoiceFilter={invoiceFilter}
         onInvoiceFilterChange={(v) => { setInvoiceFilter(v); setPage(0); }}
       />
+
+      {hasActiveFilters && (
+        <Box sx={{ mb: 2 }}>
+          <Button size="small" variant="outlined" onClick={clearFilters}>
+            Limpar filtros
+          </Button>
+        </Box>
+      )}
 
       {isLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>

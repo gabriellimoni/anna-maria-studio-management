@@ -72,7 +72,7 @@ export function ContractTemplateEditPage() {
       </Box>
 
       <MarkdownEditor
-        value={markdown}
+        value={currentMarkdown}
         onChange={(v) => {
           setMarkdown(v);
           setDirty(true);

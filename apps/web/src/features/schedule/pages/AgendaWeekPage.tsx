@@ -64,18 +64,20 @@ export function AgendaWeekPage() {
         <Button size="small" variant="contained" startIcon={<Add />} onClick={() => navigate('/drop-ins/new')}>
           Aula avulsa
         </Button>
-        <Button size="small" variant="outlined" onClick={goToToday}>
-          Hoje
-        </Button>
-        <IconButton size="small" onClick={goToPrevWeek}>
-          <ChevronLeft />
-        </IconButton>
-        {!isMobile && (
-          <Typography sx={{ fontSize: 14, minWidth: 160, textAlign: 'center' }}>{weekLabel}</Typography>
-        )}
-        <IconButton size="small" onClick={goToNextWeek}>
-          <ChevronRight />
-        </IconButton>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+          <Button size="small" variant="outlined" onClick={goToToday}>
+            Hoje
+          </Button>
+          <IconButton size="small" onClick={goToPrevWeek}>
+            <ChevronLeft />
+          </IconButton>
+          {!isMobile && (
+            <Typography sx={{ fontSize: 14, minWidth: 160, textAlign: 'center' }}>{weekLabel}</Typography>
+          )}
+          <IconButton size="small" onClick={goToNextWeek}>
+            <ChevronRight />
+          </IconButton>
+        </Box>
       </Box>
 
       {isMobile && (

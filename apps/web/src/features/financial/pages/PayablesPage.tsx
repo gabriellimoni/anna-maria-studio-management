@@ -1,4 +1,4 @@
-import { Box, Button, CircularProgress, Paper, TablePagination, TextField, Typography } from '@mui/material';
+import { Box, Button, CircularProgress, Paper, TablePagination, Typography } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Payable } from '@anna-maria/contracts';
@@ -18,7 +18,6 @@ export function PayablesPage() {
   const [status, setStatus] = useState<FinancialStatusFilter>('pending');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
-  const [competenceMonth, setCompetenceMonth] = useState('');
 
   const [payTarget, setPayTarget] = useState<Payable | null>(null);
   const [unpayTarget, setUnpayTarget] = useState<Payable | null>(null);
@@ -29,10 +28,18 @@ export function PayablesPage() {
     ...(status !== 'all' ? { status } : {}),
     ...(from ? { from } : {}),
     ...(to ? { to } : {}),
-    ...(competenceMonth ? { competenceMonth } : {}),
     page: page + 1,
     pageSize,
   };
+
+  const hasActiveFilters = status !== 'pending' || from !== '' || to !== '';
+
+  function clearFilters() {
+    setStatus('pending');
+    setFrom('');
+    setTo('');
+    setPage(0);
+  }
 
   const { data, isLoading } = usePayables(query);
   const payMutation = usePayPayable();
@@ -91,17 +98,13 @@ export function PayablesPage() {
         onToChange={(v) => { setTo(v); setPage(0); }}
       />
 
-      <Box sx={{ mb: 2 }}>
-        <TextField
-          label="Mês de competência"
-          type="month"
-          size="small"
-          value={competenceMonth}
-          onChange={(e) => { setCompetenceMonth(e.target.value); setPage(0); }}
-          slotProps={{ inputLabel: { shrink: true } }}
-          sx={{ width: 200 }}
-        />
-      </Box>
+      {hasActiveFilters && (
+        <Box sx={{ mb: 2 }}>
+          <Button size="small" variant="outlined" onClick={clearFilters}>
+            Limpar filtros
+          </Button>
+        </Box>
+      )}
 
       {isLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>

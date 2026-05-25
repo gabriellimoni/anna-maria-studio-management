@@ -14,6 +14,7 @@ import type {
 import { EventService } from '../../event/event.service';
 import { User } from '../../user/user.entity';
 import { Student } from '../students/entities/student.entity';
+import { DropInClass } from '../drop-ins/entities/drop-in-class.entity';
 import { parseDateBR } from '../scheduling/utils/date.utils';
 import { Session } from './entities/session.entity';
 import { CalendarQuery } from './dto/calendar.query';
@@ -33,7 +34,8 @@ interface RawSession {
   notes: string | null;
   created_at: Date | string;
   updated_at: Date | string;
-  studentName: string;
+  studentName: string | null;
+  prospectName: string | null;
 }
 
 function mapRaw(row: RawSession): SessionContract {
@@ -41,7 +43,7 @@ function mapRaw(row: RawSession): SessionContract {
     id: row.id,
     planId: row.plan_id,
     studentId: row.student_id,
-    studentName: row.studentName ?? '',
+    studentName: row.studentName ?? row.prospectName ?? '',
     scheduledAt: new Date(row.scheduled_at).toISOString(),
     status: row.status,
     origin: row.origin,
@@ -71,8 +73,10 @@ export class SessionsService {
       .createQueryBuilder()
       .select('s.*')
       .addSelect('st.full_name', 'studentName')
+      .addSelect('di.prospect_name', 'prospectName')
       .from(Session, 's')
       .leftJoin(Student, 'st', 'st.id = s.student_id')
+      .leftJoin(DropInClass, 'di', 'di.session_id = s.id')
       .orderBy('s.scheduled_at', 'ASC');
 
     if (opts.from) qb.andWhere('s.scheduled_at >= :from', { from: opts.from });
