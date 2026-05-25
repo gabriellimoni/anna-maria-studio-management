@@ -1,6 +1,8 @@
 import {
   Box,
   Button,
+  Card,
+  CardContent,
   Chip,
   CircularProgress,
   FormControl,
@@ -16,6 +18,8 @@ import {
   TablePagination,
   TableRow,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { Add, Visibility } from '@mui/icons-material';
 import { useState } from 'react';
@@ -38,6 +42,8 @@ const PERIOD_LABELS: Record<string, string> = {
 };
 
 export function PlansListPage() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const [expiringInDays, setExpiringInDays] = useState<7 | 30 | 60 | 90 | undefined>();
   const [status, setStatus] = useState<PlanStatus | ''>('');
@@ -55,7 +61,7 @@ export function PlansListPage() {
   const total = data?.total ?? 0;
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: { xs: 2, sm: 3 } }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
         <Typography variant="h5" sx={{ fontWeight: 700 }}>Planos</Typography>
         <Button variant="contained" startIcon={<Add />} onClick={() => navigate('/plans/new')}>
@@ -79,10 +85,53 @@ export function PlansListPage() {
         </FormControl>
       </Box>
 
-      <Paper variant="outlined">
-        {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
-        ) : (
+      {isLoading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
+      ) : isMobile ? (
+        <>
+          {(data?.data ?? []).length === 0 ? (
+            <Typography color="text.secondary">Nenhum plano encontrado</Typography>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {(data?.data ?? []).map((plan) => {
+                const st = STATUS_LABELS[plan.status] ?? { label: plan.status, color: 'default' };
+                return (
+                  <Card key={plan.id} variant="outlined">
+                    <CardContent sx={{ pb: '12px !important' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography sx={{ fontWeight: 600 }} noWrap>{plan.studentName}</Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {PERIOD_LABELS[plan.period] ?? plan.period} · {plan.weeklyFrequency}x/semana
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">Válido até {plan.endDate}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
+                          <Chip label={st.label} color={st.color} size="small" />
+                          <Button size="small" startIcon={<Visibility />} onClick={() => navigate(`/plans/${plan.id}`)}>Ver</Button>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </Box>
+          )}
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+            <TablePagination
+              component="div"
+              count={total}
+              page={page}
+              rowsPerPage={pageSize}
+              onPageChange={(_, p) => setPage(p)}
+              onRowsPerPageChange={(e) => { setPageSize(parseInt(e.target.value)); setPage(0); }}
+              rowsPerPageOptions={[10, 20, 50]}
+              labelRowsPerPage="Por página:"
+            />
+          </Box>
+        </>
+      ) : (
+        <Paper variant="outlined">
           <Table>
             <TableHead>
               <TableRow>
@@ -141,8 +190,8 @@ export function PlansListPage() {
               </TableRow>
             </TableFooter>
           </Table>
-        )}
-      </Paper>
+        </Paper>
+      )}
     </Box>
   );
 }

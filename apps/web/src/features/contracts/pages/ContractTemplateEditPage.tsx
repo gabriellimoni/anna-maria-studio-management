@@ -52,7 +52,7 @@ export function ContractTemplateEditPage() {
   if (!template) return null;
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: { xs: 2, sm: 3 } }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <Button startIcon={<ArrowBack />} onClick={() => navigate('/contratos/templates')} size="small">
           Voltar

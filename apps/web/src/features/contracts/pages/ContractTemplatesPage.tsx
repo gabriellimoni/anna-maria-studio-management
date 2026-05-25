@@ -49,7 +49,7 @@ export function ContractTemplatesPage() {
   }
 
   return (
-    <Box sx={{ p: 3, maxWidth: 900, mx: 'auto' }}>
+    <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: 900, mx: 'auto' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5">Templates de contrato</Typography>
         <Button variant="contained" onClick={() => setCreateOpen(true)}>

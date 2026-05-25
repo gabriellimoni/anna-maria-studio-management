@@ -97,7 +97,7 @@ export function PlanCreateWizardPage() {
   };
 
   return (
-    <Box sx={{ p: 3, maxWidth: 1000 }}>
+    <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: 1000 }}>
       <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>Novo plano</Typography>
 
       <Stepper activeStep={activeStep} sx={{ mb: 4 }}>

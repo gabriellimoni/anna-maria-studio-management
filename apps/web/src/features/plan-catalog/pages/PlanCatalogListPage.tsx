@@ -41,7 +41,7 @@ export function PlanCatalogListPage() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: { xs: 2, sm: 3 } }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
         <Typography variant="h5" sx={{ fontWeight: 700 }}>Catálogo de planos</Typography>
         <Button variant="contained" startIcon={<Add />} onClick={() => navigate('/plan-catalog/new')}>

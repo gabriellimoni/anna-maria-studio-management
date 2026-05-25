@@ -26,7 +26,7 @@ export function AgendaDayPage() {
   const dateLabel = format(parsedDate, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR });
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: { xs: 2, sm: 3 } }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
         <IconButton onClick={() => goToDate(subDays(parsedDate, 1))}>
           <ChevronLeft />

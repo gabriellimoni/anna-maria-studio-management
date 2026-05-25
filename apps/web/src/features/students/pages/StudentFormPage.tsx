@@ -34,7 +34,7 @@ export function StudentFormPage() {
   }
 
   return (
-    <Box sx={{ p: 3, maxWidth: 560 }}>
+    <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: 560 }}>
       <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
         {isEdit ? 'Editar aluno' : 'Novo aluno'}
       </Typography>

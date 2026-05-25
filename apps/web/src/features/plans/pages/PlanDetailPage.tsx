@@ -1,6 +1,8 @@
 import {
   Box,
   Button,
+  Card,
+  CardContent,
   Chip,
   CircularProgress,
   Dialog,
@@ -19,6 +21,8 @@ import {
   Tabs,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -66,6 +70,8 @@ const PERIOD_LABELS: Record<string, string> = {
 };
 
 export function PlanDetailPage() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const showToast = useToast();
@@ -145,7 +151,7 @@ export function PlanDetailPage() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: { xs: 2, sm: 3 } }}>
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
         <Box>
           <Typography variant="h5" sx={{ fontWeight: 700 }}>Plano</Typography>
@@ -156,14 +162,14 @@ export function PlanDetailPage() {
           </Box>
         </Box>
         {plan.status === 'active' && (
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button variant="outlined" onClick={() => navigate(`/plans/${id}/change-schedule`)}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'flex-end' }}>
+            <Button variant="outlined" size="small" onClick={() => navigate(`/plans/${id}/change-schedule`)}>
               Trocar horário
             </Button>
-            <Button variant="outlined" onClick={() => setFinishOpen(true)}>
+            <Button variant="outlined" size="small" onClick={() => setFinishOpen(true)}>
               Encerrar plano
             </Button>
-            <Button color="error" variant="outlined" onClick={() => setCancelOpen(true)}>
+            <Button color="error" variant="outlined" size="small" onClick={() => setCancelOpen(true)}>
               Cancelar
             </Button>
           </Box>
@@ -226,6 +232,34 @@ export function PlanDetailPage() {
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
           ) : !sessionsData?.data.length ? (
             <Typography color="text.secondary">Nenhum atendimento registrado.</Typography>
+          ) : isMobile ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {sessionsData.data.map((session) => {
+                const dt = new Date(session.scheduledAt);
+                return (
+                  <Card key={session.id} variant="outlined">
+                    <CardContent sx={{ pb: '12px !important' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
+                        <Box>
+                          <Typography sx={{ fontWeight: 600 }}>
+                            {dt.toLocaleDateString('pt-BR')} · {dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </Typography>
+                          {session.notes && (
+                            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{session.notes}</Typography>
+                          )}
+                        </Box>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
+                          <Chip label={SESSION_STATUS_LABELS[session.status]} color={SESSION_STATUS_COLORS[session.status]} size="small" />
+                          {session.status !== 'cancelled' && (
+                            <Button size="small" onClick={() => setAttendanceSession(session)}>Editar</Button>
+                          )}
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </Box>
           ) : (
             <Table size="small">
               <TableHead>
@@ -277,54 +311,96 @@ export function PlanDetailPage() {
 
       {tab === 1 && (
         <>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>#</TableCell>
-                <TableCell>Valor</TableCell>
-                <TableCell>Vencimento</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Pago em</TableCell>
-                <TableCell>Ações</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
+          {isMobile ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               {planReceivables.map((r, i) => {
                 const today = new Date().toISOString().slice(0, 10);
                 const isOverdue = r.status === 'pending' && r.dueDate < today;
                 return (
-                  <TableRow key={r.id}>
-                    <TableCell>{r.installmentNumber ?? i + 1}</TableCell>
-                    <TableCell>R$ {r.amount}</TableCell>
-                    <TableCell>{r.dueDate}</TableCell>
-                    <TableCell>
-                      {isOverdue ? (
-                        <Chip label="ATRASADA" color="error" size="small" />
-                      ) : (
-                        <Chip
-                          label={r.status === 'paid' ? 'Pago' : 'Pendente'}
-                          color={r.status === 'paid' ? 'success' : 'warning'}
-                          size="small"
-                        />
-                      )}
-                    </TableCell>
-                    <TableCell>{r.paidAt ?? '—'}</TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', gap: 0.5 }}>
-                        {r.status === 'pending' && (
-                          <Button size="small" onClick={() => setPayTarget(r)}>Baixa</Button>
-                        )}
-                        {r.status === 'paid' && (
-                          <Button size="small" color="warning" onClick={() => setUnpayTarget(r)}>Estornar</Button>
-                        )}
-                        <Button size="small" onClick={() => navigate(`/financeiro/receber/${r.id}/edit`)}>Editar</Button>
+                  <Card key={r.id} variant="outlined">
+                    <CardContent sx={{ pb: '12px !important' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
+                        <Box>
+                          <Typography sx={{ fontWeight: 600 }}>#{r.installmentNumber ?? i + 1} · R$ {r.amount}</Typography>
+                          <Typography variant="body2" color="text.secondary">Venc. {r.dueDate}</Typography>
+                          {r.paidAt && <Typography variant="body2" color="text.secondary">Pago em {r.paidAt}</Typography>}
+                        </Box>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
+                          {isOverdue ? (
+                            <Chip label="ATRASADA" color="error" size="small" />
+                          ) : (
+                            <Chip
+                              label={r.status === 'paid' ? 'Pago' : 'Pendente'}
+                              color={r.status === 'paid' ? 'success' : 'warning'}
+                              size="small"
+                            />
+                          )}
+                          <Box sx={{ display: 'flex', gap: 0.5 }}>
+                            {r.status === 'pending' && (
+                              <Button size="small" onClick={() => setPayTarget(r)}>Baixa</Button>
+                            )}
+                            {r.status === 'paid' && (
+                              <Button size="small" color="warning" onClick={() => setUnpayTarget(r)}>Estornar</Button>
+                            )}
+                            <Button size="small" onClick={() => navigate(`/financeiro/receber/${r.id}/edit`)}>Editar</Button>
+                          </Box>
+                        </Box>
                       </Box>
-                    </TableCell>
-                  </TableRow>
+                    </CardContent>
+                  </Card>
                 );
               })}
-            </TableBody>
-          </Table>
+            </Box>
+          ) : (
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>#</TableCell>
+                  <TableCell>Valor</TableCell>
+                  <TableCell>Vencimento</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Pago em</TableCell>
+                  <TableCell>Ações</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {planReceivables.map((r, i) => {
+                  const today = new Date().toISOString().slice(0, 10);
+                  const isOverdue = r.status === 'pending' && r.dueDate < today;
+                  return (
+                    <TableRow key={r.id}>
+                      <TableCell>{r.installmentNumber ?? i + 1}</TableCell>
+                      <TableCell>R$ {r.amount}</TableCell>
+                      <TableCell>{r.dueDate}</TableCell>
+                      <TableCell>
+                        {isOverdue ? (
+                          <Chip label="ATRASADA" color="error" size="small" />
+                        ) : (
+                          <Chip
+                            label={r.status === 'paid' ? 'Pago' : 'Pendente'}
+                            color={r.status === 'paid' ? 'success' : 'warning'}
+                            size="small"
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell>{r.paidAt ?? '—'}</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          {r.status === 'pending' && (
+                            <Button size="small" onClick={() => setPayTarget(r)}>Baixa</Button>
+                          )}
+                          {r.status === 'paid' && (
+                            <Button size="small" color="warning" onClick={() => setUnpayTarget(r)}>Estornar</Button>
+                          )}
+                          <Button size="small" onClick={() => navigate(`/financeiro/receber/${r.id}/edit`)}>Editar</Button>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
 
           <PayDialog
             open={!!payTarget}

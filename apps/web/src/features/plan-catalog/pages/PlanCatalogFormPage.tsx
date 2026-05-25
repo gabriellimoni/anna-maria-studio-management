@@ -32,7 +32,7 @@ export function PlanCatalogFormPage() {
   }
 
   return (
-    <Box sx={{ p: 3, maxWidth: 480 }}>
+    <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: 480 }}>
       <Typography variant="h5" sx={{ fontWeight: 700, mb: 3 }}>
         {isEdit ? 'Editar plano' : 'Novo plano'}
       </Typography>

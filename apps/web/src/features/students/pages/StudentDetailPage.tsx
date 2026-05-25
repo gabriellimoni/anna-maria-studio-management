@@ -1,6 +1,8 @@
 import {
   Box,
   Button,
+  Card,
+  CardContent,
   Chip,
   CircularProgress,
   Divider,
@@ -13,6 +15,8 @@ import {
   TableRow,
   Tabs,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { Add, Edit, Visibility } from '@mui/icons-material';
 import { useState } from 'react';
@@ -66,6 +70,8 @@ function Field({ label, value }: { label: string; value: string | null | undefin
 }
 
 export function StudentDetailPage() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const showToast = useToast();
@@ -97,7 +103,7 @@ export function StudentDetailPage() {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: { xs: 2, sm: 3 } }}>
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
         <Box>
           <Typography variant="h5" sx={{ fontWeight: 700 }}>{student.fullName}</Typography>
@@ -131,7 +137,7 @@ export function StudentDetailPage() {
         <Stack spacing={3} sx={{ maxWidth: 560 }}>
           <Stack spacing={2}>
             <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 1, fontSize: 11 }}>Contato</Typography>
-            <Stack sx={{ flexDirection: 'row', gap: 4 }}>
+            <Stack sx={{ flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 2, sm: 4 } }}>
               <Field label="Telefone" value={student.phone} />
               <Field label="Email" value={student.email} />
             </Stack>
@@ -143,7 +149,7 @@ export function StudentDetailPage() {
 
           <Stack spacing={2}>
             <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 1, fontSize: 11 }}>Documentos</Typography>
-            <Stack sx={{ flexDirection: 'row', gap: 4 }}>
+            <Stack sx={{ flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 2, sm: 4 } }}>
               <Field label="CPF" value={student.cpf} />
               <Field label="RG" value={student.rg} />
             </Stack>
@@ -153,12 +159,12 @@ export function StudentDetailPage() {
 
           <Stack spacing={2}>
             <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 1, fontSize: 11 }}>Endereço</Typography>
-            <Stack sx={{ flexDirection: 'row', gap: 4 }}>
+            <Stack sx={{ flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 2, sm: 4 } }}>
               <Field label="Logradouro" value={student.addressStreet} />
               <Field label="Número" value={student.addressNumber} />
             </Stack>
             <Field label="Complemento" value={student.addressComplement} />
-            <Stack sx={{ flexDirection: 'row', gap: 4 }}>
+            <Stack sx={{ flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 2, sm: 4 } }}>
               <Field label="Cidade" value={student.addressCity} />
               <Field label="Estado" value={student.addressState} />
               <Field label="CEP" value={student.addressZipcode} />
@@ -182,6 +188,29 @@ export function StudentDetailPage() {
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
           ) : !plansData?.data.length ? (
             <Typography color="text.secondary">Nenhum plano contratado.</Typography>
+          ) : isMobile ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {plansData.data.map((plan) => {
+                const st = PLAN_STATUS_LABELS[plan.status] ?? { label: plan.status, color: 'default' as const };
+                return (
+                  <Card key={plan.id} variant="outlined">
+                    <CardContent sx={{ pb: '12px !important' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
+                        <Box>
+                          <Typography sx={{ fontWeight: 600 }}>{PERIOD_LABELS[plan.period] ?? plan.period} · {plan.weeklyFrequency}x/sem</Typography>
+                          <Typography variant="body2" color="text.secondary">{plan.startDate} → {plan.endDate}</Typography>
+                          <Typography variant="body2">R$ {plan.totalPrice}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
+                          <Chip label={st.label} color={st.color} size="small" />
+                          <Button size="small" startIcon={<Visibility />} onClick={() => navigate(`/plans/${plan.id}`)}>Ver</Button>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </Box>
           ) : (
             <Table size="small">
               <TableHead>
@@ -229,6 +258,34 @@ export function StudentDetailPage() {
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
         ) : !sessionsData?.data.length ? (
           <Typography color="text.secondary">Nenhum atendimento registrado.</Typography>
+        ) : isMobile ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            {sessionsData.data.map((session) => {
+              const dt = new Date(session.scheduledAt);
+              return (
+                <Card key={session.id} variant="outlined">
+                  <CardContent sx={{ pb: '12px !important' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
+                      <Box>
+                        <Typography sx={{ fontWeight: 600 }}>
+                          {dt.toLocaleDateString('pt-BR')} · {dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </Typography>
+                        {session.notes && (
+                          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{session.notes}</Typography>
+                        )}
+                      </Box>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
+                        <Chip label={STATUS_LABELS[session.status]} color={STATUS_COLORS[session.status]} size="small" />
+                        {session.status !== 'cancelled' && (
+                          <Button size="small" onClick={() => setAttendanceSession(session)}>Editar</Button>
+                        )}
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </Box>
         ) : (
           <Table size="small">
             <TableHead>

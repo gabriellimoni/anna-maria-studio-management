@@ -74,19 +74,19 @@ export function StudentForm({ defaultValues, onSubmit, loading }: Props) {
         />
         <TextField label="Data de nascimento" type="date" slotProps={{ inputLabel: { shrink: true } }} {...register('birthDate')} />
         <TextField label="Observações" multiline rows={3} {...register('notes')} />
-        <Stack sx={{ flexDirection: 'row', gap: 2 }}>
+        <Stack sx={{ flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
           <TextField label="CPF" sx={{ flex: 1 }} {...register('cpf')} />
           <TextField label="RG" sx={{ flex: 1 }} {...register('rg')} />
         </Stack>
-        <Stack sx={{ flexDirection: 'row', gap: 2 }}>
+        <Stack sx={{ flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
           <TextField label="Logradouro" sx={{ flex: 1 }} {...register('addressStreet')} />
-          <TextField label="Número" sx={{ width: 120 }} {...register('addressNumber')} />
+          <TextField label="Número" sx={{ width: { xs: '100%', sm: 120 } }} {...register('addressNumber')} />
         </Stack>
         <TextField label="Complemento" {...register('addressComplement')} />
-        <Stack sx={{ flexDirection: 'row', gap: 2 }}>
+        <Stack sx={{ flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
           <TextField label="Cidade" sx={{ flex: 1 }} {...register('addressCity')} />
-          <TextField label="Estado (UF)" sx={{ width: 120 }} {...register('addressState')} />
-          <TextField label="CEP" sx={{ width: 140 }} {...register('addressZipcode')} />
+          <TextField label="Estado (UF)" sx={{ width: { xs: '100%', sm: 120 } }} {...register('addressState')} />
+          <TextField label="CEP" sx={{ width: { xs: '100%', sm: 140 } }} {...register('addressZipcode')} />
         </Stack>
         <Button type="submit" variant="contained" disabled={loading}>
           Salvar

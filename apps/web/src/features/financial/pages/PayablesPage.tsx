@@ -74,7 +74,7 @@ export function PayablesPage() {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: { xs: 2, sm: 3 } }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5">A pagar</Typography>
         <Button variant="contained" onClick={() => navigate('/financeiro/pagar/novo')}>
