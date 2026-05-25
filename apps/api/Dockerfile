@@ -15,34 +15,21 @@ COPY packages/contracts ./packages/contracts
 COPY apps/api ./apps/api
 RUN pnpm --filter @anna-maria/api build
 
-# ── production deps only ──────────────────────────────────────────────────────
-FROM base AS prod-deps
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY apps/api/package.json ./apps/api/
-COPY packages/contracts/package.json ./packages/contracts/
-RUN pnpm install --frozen-lockfile --prod --ignore-scripts
+# ── standalone deploy bundle (prod deps only, no workspace symlinks) ───────────
+FROM build AS deploy
+RUN pnpm --filter @anna-maria/api deploy --prod /app/standalone
 
 # ── runtime image ─────────────────────────────────────────────────────────────
 FROM node:24-alpine AS runtime
-RUN corepack enable && corepack prepare pnpm@11.0.9 --activate
 WORKDIR /app
 
-# Copy production node_modules and built output
-COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=prod-deps /app/apps/api/node_modules ./apps/api/node_modules
-COPY --from=build /app/apps/api/dist ./apps/api/dist
-COPY --from=build /app/apps/api/package.json ./apps/api/package.json
-COPY --from=build /app/package.json ./package.json
-COPY --from=build /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
-
+COPY --from=deploy /app/standalone ./
 # Migration source files needed by the prod migration runner
-COPY --from=build /app/apps/api/src/database ./apps/api/src/database
+COPY --from=build /app/apps/api/src/database ./src/database
 
-# Entrypoint script: run migrations then start the app
 COPY apps/api/docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 
-WORKDIR /app/apps/api
 EXPOSE 3000
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
