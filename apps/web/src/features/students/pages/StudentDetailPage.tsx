@@ -128,11 +128,42 @@ export function StudentDetailPage() {
       <Divider sx={{ mb: 3 }} />
 
       {tab === 0 && (
-        <Stack spacing={2} sx={{ maxWidth: 480 }}>
-          <Field label="Telefone" value={student.phone} />
-          <Field label="Email" value={student.email} />
-          <Field label="Data de nascimento" value={student.birthDate} />
-          <Field label="Observações" value={student.notes} />
+        <Stack spacing={3} sx={{ maxWidth: 560 }}>
+          <Stack spacing={2}>
+            <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 1, fontSize: 11 }}>Contato</Typography>
+            <Stack sx={{ flexDirection: 'row', gap: 4 }}>
+              <Field label="Telefone" value={student.phone} />
+              <Field label="Email" value={student.email} />
+            </Stack>
+            <Field label="Data de nascimento" value={student.birthDate} />
+            <Field label="Observações" value={student.notes} />
+          </Stack>
+
+          <Divider />
+
+          <Stack spacing={2}>
+            <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 1, fontSize: 11 }}>Documentos</Typography>
+            <Stack sx={{ flexDirection: 'row', gap: 4 }}>
+              <Field label="CPF" value={student.cpf} />
+              <Field label="RG" value={student.rg} />
+            </Stack>
+          </Stack>
+
+          <Divider />
+
+          <Stack spacing={2}>
+            <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 1, fontSize: 11 }}>Endereço</Typography>
+            <Stack sx={{ flexDirection: 'row', gap: 4 }}>
+              <Field label="Logradouro" value={student.addressStreet} />
+              <Field label="Número" value={student.addressNumber} />
+            </Stack>
+            <Field label="Complemento" value={student.addressComplement} />
+            <Stack sx={{ flexDirection: 'row', gap: 4 }}>
+              <Field label="Cidade" value={student.addressCity} />
+              <Field label="Estado" value={student.addressState} />
+              <Field label="CEP" value={student.addressZipcode} />
+            </Stack>
+          </Stack>
         </Stack>
       )}
 

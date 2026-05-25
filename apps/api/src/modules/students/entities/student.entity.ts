@@ -20,6 +20,30 @@ export class Student {
   @Column({ type: 'text', nullable: true })
   notes: string | null;
 
+  @Column({ type: 'varchar', nullable: true })
+  cpf: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  rg: string | null;
+
+  @Column({ type: 'varchar', nullable: true, name: 'address_street' })
+  addressStreet: string | null;
+
+  @Column({ type: 'varchar', nullable: true, name: 'address_number' })
+  addressNumber: string | null;
+
+  @Column({ type: 'varchar', nullable: true, name: 'address_complement' })
+  addressComplement: string | null;
+
+  @Column({ type: 'varchar', nullable: true, name: 'address_city' })
+  addressCity: string | null;
+
+  @Column({ type: 'varchar', nullable: true, name: 'address_state' })
+  addressState: string | null;
+
+  @Column({ type: 'varchar', nullable: true, name: 'address_zipcode' })
+  addressZipcode: string | null;
+
   @Column({ type: 'boolean', default: true, name: 'is_active' })
   isActive: boolean;
 

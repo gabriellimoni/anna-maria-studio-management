@@ -1,19 +1,24 @@
 # Next developments
 
-1. Permitir que o usuário parametrize as suas janelas de classificação - página de configs do usuário - perfil - talvez não precise agora...
-1. Lembretes recorrentes - planned - maybe not necessary - backlog
-1. Add transaction when creating campaing and campaignCustomer
+1. Adicionar lógica de finalizar planos anteriores quando um novo for criado para o cliente - botão para finalizar também...
+1. Refatorar aplicação para adicionar os domain.events em todas as operações que o sistema realiza e salvar memória + claude.md para sempre colocar um evento pareado com as operações
+1. Add e2e tests on frontend - ensure all works after changes... DO THIS BEFORE GO LIVE
+1. Mobile resolution...
+1. Login with correct name/logo
+1. PWA pra permitir download
+1. Link temporário para o usuário poder preencher seu próprio cadastro - salvou não pode usar de novo
+1. Deploy DEV env
+1. Deploy PRD env
+
+## Migration from old system
+
+1. Think about of how to migrate from old system - maybe some xlsx format with tabs?
+
+## Later
+
+1. Better date formatting - receivables and maybe payables and maybe all system
 1. Add logs on Posthog
 1. Add error tracing on posthog - backend
 1. Add error tracing on posthog - frontend
 1. Add session replay on posthog
 1. Version tracker + updater
-
-## Tech debts
-
-1. Pagination
-1. Check timeline performance - maybe infinity scroll
-
-## Bugs
-
-1. We might not need "contacted" status - it might end in "interested" or "not_interested" - at the moment we loose the metrics.

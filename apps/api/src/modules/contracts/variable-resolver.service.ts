@@ -11,7 +11,19 @@ interface PlanWithRelations {
   weeklyFrequency: number;
   period: string;
   paymentMethod: string | null;
-  student: { name: string; email: string | null; phone: string | null };
+  student: {
+    name: string;
+    email: string | null;
+    phone: string | null;
+    cpf: string | null;
+    rg: string | null;
+    addressStreet: string | null;
+    addressNumber: string | null;
+    addressComplement: string | null;
+    addressCity: string | null;
+    addressState: string | null;
+    addressZipcode: string | null;
+  };
   planCatalog: { name: string } | null;
   receivables?: Array<{ amount: string }>;
 }
@@ -40,6 +52,13 @@ export class VariableResolverService {
         p.period, p.payment_method AS "paymentMethod",
         s.full_name AS "studentName", s.email AS "studentEmail",
         s.phone AS "studentPhone",
+        s.cpf AS "studentCpf", s.rg AS "studentRg",
+        s.address_street AS "studentAddressStreet",
+        s.address_number AS "studentAddressNumber",
+        s.address_complement AS "studentAddressComplement",
+        s.address_city AS "studentAddressCity",
+        s.address_state AS "studentAddressState",
+        s.address_zipcode AS "studentAddressZipcode",
         pc.name AS "planCatalogName"
        FROM plan p
        JOIN student s ON s.id = p.student_id
@@ -60,6 +79,14 @@ export class VariableResolverService {
       studentName: string;
       studentEmail: string | null;
       studentPhone: string | null;
+      studentCpf: string | null;
+      studentRg: string | null;
+      studentAddressStreet: string | null;
+      studentAddressNumber: string | null;
+      studentAddressComplement: string | null;
+      studentAddressCity: string | null;
+      studentAddressState: string | null;
+      studentAddressZipcode: string | null;
       planCatalogName: string | null;
     };
 
@@ -80,10 +107,30 @@ export class VariableResolverService {
         name: row.studentName,
         email: row.studentEmail,
         phone: row.studentPhone,
+        cpf: row.studentCpf,
+        rg: row.studentRg,
+        addressStreet: row.studentAddressStreet,
+        addressNumber: row.studentAddressNumber,
+        addressComplement: row.studentAddressComplement,
+        addressCity: row.studentAddressCity,
+        addressState: row.studentAddressState,
+        addressZipcode: row.studentAddressZipcode,
       },
       planCatalog: row.planCatalogName ? { name: row.planCatalogName } : null,
       receivables: receivables as Array<{ amount: string }>,
     };
+  }
+
+  private formatAddress(s: PlanWithRelations['student']): string {
+    const parts: string[] = [];
+    if (s.addressStreet) {
+      const line = s.addressNumber ? `${s.addressStreet}, ${s.addressNumber}` : s.addressStreet;
+      parts.push(s.addressComplement ? `${line}, ${s.addressComplement}` : line);
+    }
+    const cityState = [s.addressCity, s.addressState].filter(Boolean).join('/');
+    if (cityState) parts.push(cityState);
+    if (s.addressZipcode) parts.push(`CEP ${s.addressZipcode}`);
+    return parts.join(' - ');
   }
 
   private buildVars(plan: PlanWithRelations, currentUser: User): Record<string, string> {
@@ -100,6 +147,11 @@ export class VariableResolverService {
       studentName: plan.student.name,
       studentEmail: plan.student.email ?? '',
       studentPhone: plan.student.phone ?? '',
+      studentCpf: plan.student.cpf ?? '',
+      studentRg: plan.student.rg ?? '',
+      studentAddress: this.formatAddress(plan.student),
+      studentAddressCity: plan.student.addressCity ?? '',
+      studentAddressState: plan.student.addressState ?? '',
       planName: plan.planCatalog?.name ?? '',
       weeklyFrequency: String(plan.weeklyFrequency),
       period: plan.period,
@@ -131,6 +183,11 @@ export class VariableResolverService {
       studentName: 'Maria Silva',
       studentEmail: 'maria@exemplo.com',
       studentPhone: '(11) 99999-9999',
+      studentCpf: '123.456.789-00',
+      studentRg: '12.345.678-9',
+      studentAddress: 'Rua das Flores, 100, Apto 1 - São Paulo/SP - CEP 01310-100',
+      studentAddressCity: 'São Paulo',
+      studentAddressState: 'SP',
       planName: 'Plano Mensal',
       weeklyFrequency: '2',
       period: 'monthly',

@@ -33,4 +33,52 @@ export class CreateStudentDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @ApiPropertyOptional()
+  @emptyToUndefined()
+  @IsString()
+  @IsOptional()
+  cpf?: string;
+
+  @ApiPropertyOptional()
+  @emptyToUndefined()
+  @IsString()
+  @IsOptional()
+  rg?: string;
+
+  @ApiPropertyOptional()
+  @emptyToUndefined()
+  @IsString()
+  @IsOptional()
+  addressStreet?: string;
+
+  @ApiPropertyOptional()
+  @emptyToUndefined()
+  @IsString()
+  @IsOptional()
+  addressNumber?: string;
+
+  @ApiPropertyOptional()
+  @emptyToUndefined()
+  @IsString()
+  @IsOptional()
+  addressComplement?: string;
+
+  @ApiPropertyOptional()
+  @emptyToUndefined()
+  @IsString()
+  @IsOptional()
+  addressCity?: string;
+
+  @ApiPropertyOptional()
+  @emptyToUndefined()
+  @IsString()
+  @IsOptional()
+  addressState?: string;
+
+  @ApiPropertyOptional()
+  @emptyToUndefined()
+  @IsString()
+  @IsOptional()
+  addressZipcode?: string;
 }
