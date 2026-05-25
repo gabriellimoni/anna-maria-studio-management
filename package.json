@@ -1,6 +1,6 @@
 {
   "name": "anna-maria",
-  "version": "0.0.37",
+  "version": "0.0.38",
   "private": true,
   "engines": {
     "node": ">=24"
