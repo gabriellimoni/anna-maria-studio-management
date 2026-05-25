@@ -1,6 +1,8 @@
 import { Component, ReactNode } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import { CssBaseline, Typography } from '@mui/material';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
 import { AuthProvider } from './auth/AuthContext';
@@ -77,6 +79,7 @@ export function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider theme={theme}>
+        <LocalizationProvider dateAdapter={AdapterDateFns}>
         <CssBaseline />
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
@@ -120,6 +123,7 @@ export function App() {
             </ToastProvider>
           </AuthProvider>
         </QueryClientProvider>
+        </LocalizationProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

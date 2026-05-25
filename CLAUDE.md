@@ -262,6 +262,8 @@ When adding a new domain, add unit tests that assert `eventService.record` was c
 
 > **HARD RULE: No backend implementation is done until its tests are written and passing.** This is non-negotiable — a service, controller, scheduler, or any backend feature without tests is considered incomplete, regardless of whether the feature logic itself works.
 
+> **HARD RULE: No frontend feature is done until it has at least two Playwright e2e tests — one happy path and one error scenario (e.g. validation failure, API 4xx/5xx, empty state, unauthorized).** This is non-negotiable. A new page, form, or UI flow without both tests is considered incomplete. Mock HTTP at the network layer (see existing `apps/web` Playwright suite for the pattern).
+
 Every new backend module MUST include automated tests before the feature is considered complete:
 
 - **Unit tests** (mock repo/DataSource via `@nestjs/testing`) for all service methods — happy paths, error paths (NotFoundException, ConflictException), and edge cases. Cover as many meaningful scenarios as the logic warrants.

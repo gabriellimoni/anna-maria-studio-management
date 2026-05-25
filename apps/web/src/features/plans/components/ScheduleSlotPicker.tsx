@@ -1,5 +1,7 @@
-import { Box, Chip, FormControl, InputLabel, MenuItem, Select, TextField, Typography } from '@mui/material';
+import { Box, Chip, FormControl, InputLabel, MenuItem, Select, Typography } from '@mui/material';
+import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { useEffect, useState } from 'react';
+import { parse, format, isValid } from 'date-fns';
 import { plansApi } from '../api/plans';
 
 const WEEKDAYS = [
@@ -60,14 +62,18 @@ export function ScheduleSlotPicker({ index, weekday, startTime, from, to, onChan
           </Select>
         </FormControl>
 
-        <TextField
-          size="small"
+        <TimePicker
           label="Horário"
-          type="time"
-          value={startTime}
-          onChange={(e) => onChange(weekday, e.target.value)}
-          slotProps={{ inputLabel: { shrink: true } }}
-          sx={{ width: 120 }}
+          ampm={false}
+          value={startTime ? parse(startTime, 'HH:mm', new Date()) : null}
+          onChange={(date) => {
+            if (date && isValid(date)) {
+              onChange(weekday, format(date, 'HH:mm'));
+            } else {
+              onChange(weekday, '');
+            }
+          }}
+          slotProps={{ textField: { size: 'small', sx: { width: 130 } } }}
         />
       </Box>
 
