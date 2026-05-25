@@ -1,10 +1,10 @@
 FROM node:24-alpine AS base
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate
 WORKDIR /app
 
 # ── deps: install all workspace dependencies ──────────────────────────────────
 FROM base AS deps
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/contracts/package.json ./packages/contracts/
 RUN HUSKY=0 pnpm install --frozen-lockfile
@@ -24,7 +24,7 @@ RUN pnpm install --frozen-lockfile --prod --ignore-scripts
 
 # ── runtime image ─────────────────────────────────────────────────────────────
 FROM node:24-alpine AS runtime
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate
 WORKDIR /app
 
 # Copy production node_modules and built output
