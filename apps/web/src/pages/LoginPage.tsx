@@ -81,11 +81,11 @@ export function LoginPage() {
               <Campaign sx={{ color: 'white', fontSize: 22 }} />
             </Box>
             <Typography sx={{ fontWeight: 700, fontSize: 22 }}>
-              CampanhaPro
+              Studio de Pilates
             </Typography>
           </Box>
           <Typography sx={{ color: 'text.secondary', fontSize: 14 }}>
-            Acesse sua conta para gerenciar campanhas
+            Acesse sua conta
           </Typography>
         </Box>
 
