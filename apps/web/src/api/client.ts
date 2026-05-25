@@ -21,6 +21,13 @@ apiClient.interceptors.request.use(async (config) => {
   if (user) {
     const token = await user.getIdToken();
     config.headers.Authorization = `Bearer ${token}`;
+    return config;
+  }
+  if (typeof window !== 'undefined') {
+    const w = window as unknown as { __E2E_AUTH__?: { token: string } };
+    if (w.__E2E_AUTH__?.token) {
+      config.headers.Authorization = `Bearer ${w.__E2E_AUTH__.token}`;
+    }
   }
   return config;
 });
