@@ -8,7 +8,7 @@ const SENSITIVE_FIELDS = ['authorization', 'password', 'amount', 'paidAt', 'paym
     PinoLoggerModule.forRoot({
       pinoHttp: {
         level: process.env.LOG_LEVEL ?? 'info',
-        transport: process.env.NODE_ENV !== 'production' ? { target: 'pino-pretty' } : undefined,
+        transport: process.env.NODE_ENV !== 'production' ? { target: require.resolve('pino-pretty') } : undefined,
         genReqId: (req) => req.headers['x-request-id'] ?? crypto.randomUUID(),
         redact: {
           paths: SENSITIVE_FIELDS.flatMap((f) => [`req.headers.${f}`, `req.body.${f}`, `res.body.${f}`]),
