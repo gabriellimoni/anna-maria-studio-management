@@ -38,27 +38,37 @@ export class PayablesService {
   async findAll(query: ListPayablesQuery): Promise<PaginatedPayables> {
     const { status, from, to, recurringExpenseId, source, competenceMonth, page = 1, pageSize = 20 } = query;
 
+    const applyWhere = (qb: ReturnType<typeof this.repo.createQueryBuilder>) => {
+      if (status === 'overdue') {
+        qb.andWhere("p.status = 'pending'").andWhere('p.due_date < CURRENT_DATE');
+      } else if (status) {
+        qb.andWhere('p.status = :status', { status });
+      }
+      if (from) qb.andWhere('p.due_date >= :from', { from });
+      if (to) qb.andWhere('p.due_date <= :to', { to });
+      if (recurringExpenseId) qb.andWhere('p.recurring_expense_id = :recurringExpenseId', { recurringExpenseId });
+      if (source) qb.andWhere('p.source = :source', { source });
+      if (competenceMonth) {
+        const firstDay = `${competenceMonth}-01`;
+        qb.andWhere('p.competence_month = :firstDay', { firstDay });
+      }
+    };
+
+    const countQb = this.repo.createQueryBuilder('p');
+    applyWhere(countQb);
+    const total = await countQb.getCount();
+
+    const sumQb = this.repo.createQueryBuilder('p').select('COALESCE(SUM(p.amount), 0)', 'totalAmount');
+    applyWhere(sumQb);
+    const sumResult = await sumQb.getRawOne<{ totalAmount: string }>();
+    const totalAmount = sumResult?.totalAmount ?? '0';
+
     const qb = this.repo.createQueryBuilder('p').orderBy('p.due_date', 'ASC');
-
-    if (status === 'overdue') {
-      qb.andWhere("p.status = 'pending'").andWhere('p.due_date < CURRENT_DATE');
-    } else if (status) {
-      qb.andWhere('p.status = :status', { status });
-    }
-
-    if (from) qb.andWhere('p.due_date >= :from', { from });
-    if (to) qb.andWhere('p.due_date <= :to', { to });
-    if (recurringExpenseId) qb.andWhere('p.recurring_expense_id = :recurringExpenseId', { recurringExpenseId });
-    if (source) qb.andWhere('p.source = :source', { source });
-    if (competenceMonth) {
-      const firstDay = `${competenceMonth}-01`;
-      qb.andWhere('p.competence_month = :firstDay', { firstDay });
-    }
-
+    applyWhere(qb);
     qb.skip((page - 1) * pageSize).take(pageSize);
 
-    const [data, total] = await qb.getManyAndCount();
-    return { data: data.map(toContract), total };
+    const data = await qb.getMany();
+    return { data: data.map(toContract), total, totalAmount };
   }
 
   async findOne(id: string): Promise<PayableContract> {

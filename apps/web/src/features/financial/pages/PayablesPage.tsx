@@ -40,6 +40,9 @@ export function PayablesPage() {
 
   const rows = data?.data ?? [];
   const total = data?.total ?? 0;
+  const totalAmount = data?.totalAmount ?? '0';
+
+  const totalAmountFormatted = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(totalAmount));
 
   const pending = rows.filter((p) => p.status === 'pending' && !p.isOverdue).length;
   const paid = rows.filter((p) => p.status === 'paid').length;
@@ -116,7 +119,10 @@ export function PayablesPage() {
               onEdit={(p) => navigate(`/financeiro/pagar/${p.id}/edit`)}
             />
           </Paper>
-          <Box sx={{ mt: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mt: 2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+              Total a pagar: {totalAmountFormatted}
+            </Typography>
             <Typography variant="body2" color="text.secondary">
               {total} lançamentos | Pendentes: {pending} | Pagas: {paid} | Atrasadas: {overdue}
             </Typography>

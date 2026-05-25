@@ -1,7 +1,6 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { SelectQueryBuilder } from 'typeorm';
 import { Payable } from '../entities/payable.entity';
 import { PayablesService } from '../payables.service';
 
@@ -32,8 +31,11 @@ describe('PayablesService (unit)', () => {
     andWhere: jest.fn().mockReturnThis(),
     skip: jest.fn().mockReturnThis(),
     take: jest.fn().mockReturnThis(),
-    getManyAndCount: jest.fn(),
-  } as unknown as SelectQueryBuilder<Payable>;
+    select: jest.fn().mockReturnThis(),
+    getCount: jest.fn(),
+    getRawOne: jest.fn(),
+    getMany: jest.fn(),
+  };
 
   const mockRepo = {
     createQueryBuilder: jest.fn().mockReturnValue(mockQb),
@@ -157,21 +159,54 @@ describe('PayablesService (unit)', () => {
   });
 
   describe('findAll()', () => {
+    function makeQb(overrides: Record<string, unknown> = {}) {
+      return {
+        orderBy: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+        getRawOne: jest.fn().mockResolvedValue({ totalAmount: '0' }),
+        getMany: jest.fn().mockResolvedValue([]),
+        ...overrides,
+      };
+    }
+
+    function setupFindAllMocks(rows: Payable[] = [], count = 0, totalAmount = '0') {
+      const countQb = makeQb({ getCount: jest.fn().mockResolvedValue(count) });
+      const sumQb = makeQb({ getRawOne: jest.fn().mockResolvedValue({ totalAmount }) });
+      const dataQb = makeQb({ getMany: jest.fn().mockResolvedValue(rows) });
+      mockRepo.createQueryBuilder
+        .mockReturnValueOnce(countQb)
+        .mockReturnValueOnce(sumQb)
+        .mockReturnValueOnce(dataQb);
+      return { countQb, sumQb, dataQb };
+    }
+
     it('applies overdue filter', async () => {
-      (mockQb.getManyAndCount as jest.Mock).mockResolvedValue([[], 0]);
+      const { countQb } = setupFindAllMocks();
 
       await service.findAll({ status: 'overdue' });
 
-      expect(mockQb.andWhere).toHaveBeenCalledWith("p.status = 'pending'");
-      expect(mockQb.andWhere).toHaveBeenCalledWith('p.due_date < CURRENT_DATE');
+      expect(countQb.andWhere).toHaveBeenCalledWith("p.status = 'pending'");
+      expect(countQb.andWhere).toHaveBeenCalledWith('p.due_date < CURRENT_DATE');
     });
 
     it('applies status filter', async () => {
-      (mockQb.getManyAndCount as jest.Mock).mockResolvedValue([[], 0]);
+      const { countQb } = setupFindAllMocks();
 
       await service.findAll({ status: 'paid' });
 
-      expect(mockQb.andWhere).toHaveBeenCalledWith('p.status = :status', { status: 'paid' });
+      expect(countQb.andWhere).toHaveBeenCalledWith('p.status = :status', { status: 'paid' });
+    });
+
+    it('returns totalAmount in result', async () => {
+      setupFindAllMocks([], 0, '1500.00');
+
+      const result = await service.findAll({});
+
+      expect(result.totalAmount).toBe('1500.00');
     });
   });
 });

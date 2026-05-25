@@ -52,4 +52,5 @@ export interface ListPayablesQuery {
 export interface PaginatedPayables {
   data: Payable[];
   total: number;
+  totalAmount: string;
 }
