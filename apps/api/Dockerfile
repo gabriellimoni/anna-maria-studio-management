@@ -13,7 +13,7 @@ RUN HUSKY=0 pnpm install --frozen-lockfile
 FROM deps AS build
 COPY packages/contracts ./packages/contracts
 COPY apps/api ./apps/api
-RUN pnpm --filter @representante-vendas/api build
+RUN pnpm --filter @anna-maria/api build
 
 # ── production deps only ──────────────────────────────────────────────────────
 FROM base AS prod-deps
